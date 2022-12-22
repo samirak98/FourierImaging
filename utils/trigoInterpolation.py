@@ -38,17 +38,16 @@ class TrigonometricResize_2d:
 
         pad = ((newft_shape - oldft_shape)/2).astype(int) #the difference between both ft shapes is always even
         pad_list = [pad[1], pad[1], pad[0], pad[0]] #according to torch.nn.functional.pad documentation: 'starting from the last dimension and moving forward'
-        print(pad_list)
-
+    
         xf_pad = tf.pad(xf, pad_list)
         if new_shape[-2] < newft_shape[-2]:
             xf_pad[:,:,0,:] = xf_pad[:,:,0,:]*2
         
         if new_shape[-1] < newft_shape[-1]:
             xf_pad[:,:,:,0] = xf_pad[:,:,:,0]*2
-        x_inter = fft.ifft2(fft.ifftshift(xf_pad[:,:,:new_shape[-2],:new_shape[-1]]), norm = self.norm)
+        x_inter = fft.ifft2(fft.ifftshift(xf_pad[:,:,:new_shape[-2],:new_shape[-1]]), norm=self.norm).type(x.dtype)
         
             
 
 
-        return xf, xf_pad, x_inter
+        return x_inter
