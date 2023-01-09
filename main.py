@@ -18,12 +18,12 @@ fix_seed(conf['seed'])
 train_loader, valid_loader, test_loader = data.load(conf['dataset'])
 
 #%% define the model
-if conf['CUDA']['use_cuda']:
+if conf['CUDA']['use_cuda'] and torch.cuda.is_available():
     device = torch.device("cuda" + ":" + str(conf['CUDA']['cuda_device']))
 else:
     device = "cpu"
 conf['train']['device'] = device
-model = load_model(conf['model']).to(device)
+model = load_model(conf).to(device)
 
 #%% Initialize optimizer and lamda scheduler
 opt = init_opt(model, conf['train']['opt'])

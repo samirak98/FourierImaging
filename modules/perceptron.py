@@ -6,7 +6,7 @@ class perceptron(nn.Module):
     def __init__(self, sizes, act_fun, mean = 0.0, std = 1.0):
         super(perceptron, self).__init__()
         
-        self.act_fn = nn.ReLU
+        self.act_fn = act_fun
         self.mean = mean
         self.std = std
         

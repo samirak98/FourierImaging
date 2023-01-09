@@ -12,8 +12,8 @@ def load(conf, test_size=1):
         conf['im_shape'] = [1,28,28]
         
         # set mean and std for this dataset
-        conf['data_set_mean'] = 0.1307
-        conf['data_set_std'] = 0.3081
+        conf['mean'] = 0.1307
+        conf['std'] = 0.3081
 
         # load MNIST
         transform = transforms.Compose([transforms.ToTensor()])

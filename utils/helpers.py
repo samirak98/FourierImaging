@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from modules.perceptron import perceptron
 import random
 import numpy as np
@@ -14,8 +15,14 @@ def fix_seed(seed=0):
 
 #%% load model by type
 def load_model(conf):
-    if conf['type'] == 'perceptron':
-        model = perceptron(conf['sizes'], conf['activation_function'])
+    model_conf = conf['model']
+    # load activation function
+    if model_conf['activation_function'] == 'ReLU':
+        act_fun = nn.ReLU
+    
+    if model_conf['type'] == 'perceptron':
+        model = perceptron(model_conf['sizes'], act_fun = act_fun,\
+                           mean=conf['dataset']['mean'], std=conf['dataset']['std'])
     else:
         raise ValueError('Unknown model type: ' + conf['type'])
     
