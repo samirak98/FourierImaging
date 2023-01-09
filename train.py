@@ -13,12 +13,14 @@ def select_loss(name):
     return loss_fct
 #%% the trainer class
 class trainer:
-    def __init__(self, model, opt, train_loader, validation_loader, conf):
+    def __init__(self, model, opt, train_loader, valid_loader, conf):
         self.model = model
         self.opt = opt
         self.train_loader = train_loader
+        self.valid_loader = valid_loader
         self.loss = select_loss(conf['loss'])
         self.device = conf['device']
+        self.verbosity = conf['verbosity']
         
 
     def train_step(self):
@@ -67,7 +69,7 @@ class trainer:
         
         # -------------------------------------------------------------------------
         # loop over all batches
-        for batch_idx, (x, y) in enumerate(self.validation_loader):
+        for batch_idx, (x, y) in enumerate(self.valid_loader):
             # get batch data
             x, y = x.to(self.device), y.to(self.device)
             
