@@ -1,0 +1,20 @@
+model:
+  type: perceptron
+  activation_function: ReLU
+  sizes: [784, 200, 80, 10]
+dataset:
+  name: MNIST
+  path: "../datasets"
+  train_split: 0.9
+  download: False
+  batch_size: 128
+  num_workers: 1
+CUDA:
+  use_cuda: False
+  cuda_device: 0
+train:
+  loss: crossentropy
+  epochs: 100
+  lr: 0.1
+  verbosity: 1
+

@@ -8,24 +8,24 @@ import os
 #%% 
 def load(conf, test_size=1):
     train, valid, test, train_loader, valid_loader, test_loader = [None] * 6
-    if conf.data_set == "MNIST":
-        conf.im_shape = [1,28,28]
+    if conf['name'] == "MNIST":
+        conf['im_shape'] = [1,28,28]
         
         # set mean and std for this dataset
-        conf.data_set_mean = 0.1307
-        conf.data_set_std = 0.3081
+        conf['data_set_mean'] = 0.1307
+        conf['data_set_std'] = 0.3081
 
         # load MNIST
         transform = transforms.Compose([transforms.ToTensor()])
-        train = datasets.MNIST(conf.data_file, train=True, download=conf.download, transform=transform)
-        test = datasets.MNIST(conf.data_file, train=False, download=conf.download, transform=transform)
+        train = datasets.MNIST(conf['path'], train=True, download=conf['download'], transform=transform)
+        test = datasets.MNIST(conf['path'], train=False, download=conf['download'], transform=transform)
     else:
         raise ValueError("Unknown dataset:" + conf.data_set)
    
-    tr_loader, v_loader, te_loader = split_loader(train, test, conf.batch_size,\
-                                                  train_split=conf.train_split,\
+    tr_loader, v_loader, te_loader = split_loader(train, test, conf['batch_size'],\
+                                                  train_split=conf['train_split'],\
                                                   test_size=test_size,\
-                                                  num_workers=conf.num_workers)
+                                                  num_workers=conf['num_workers'])
         
     return tr_loader, v_loader, te_loader
 #%% Define DataLoaders and split in train, valid, test       

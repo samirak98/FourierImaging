@@ -1,41 +1,52 @@
 import torch
-from utils import configuration as cf
+import yaml
+
+# custom imports
+from utils.load_model import load_model
 from utils import datasets as data
-from modules.perceptron import perceptron
-import trainer
+
+import train
 
 #%% Set up variable and data for an example
-data_file = "../datasets/"
-conf = cf.conf(data_file=data_file, download=True)
+experiment_file = 'utils/experiments/MNIST-classification.yaml'
+with open(experiment_file) as exp_file:
+    conf = yaml.safe_load(exp_file)
+
+#conf = cf.conf(data_file=data_file, download=True)
 
 # get train, validation and test loader
-train_loader, valid_loader, test_loader = data.load(conf)
+train_loader, valid_loader, test_loader = data.load(conf['dataset'])
 
 
 #%% define the model and an instance of the best model class
-sizes = [784, 200, 80, 10]
-model = perceptron(sizes, conf.activation_function).to(conf.device)
+if conf['CUDA']['use_cuda']:
+    device = torch.device("cuda" + ":" + str(conf['CUDA']['cuda_device']))
+else:
+    device = "cpu"
+conf['train']['device'] = device
+model = load_model(conf['model']).to(device)
 
 #%% Initialize optimizer and lamda scheduler
-opt = torch.optim.SGD(model.parameters(), lr = 0.1, momentum = 0.9)
+opt = torch.optim.SGD(model.parameters(), lr = conf['train']['lr'], momentum = 0.9)
 # initalize history
 tracked = ['train_loss', 'train_acc', 'val_loss', 'val_acc']
 history = {key: [] for key in tracked}
+trainer = train.trainer(model, opt, train_loader, valid_loader, conf['train'])
 
 
 def main():
-    print("Train model: {}".format(conf.model))
-    for i in range(conf.epochs):
+    print("Train model: " + conf['model']['type'])
+    for i in range(conf['train']['epochs']):
         print(10*"<>")
         print(20*"|")
         print(10*"<>")
         print('Epoch', i)
         
         # train_step
-        train_data = trainer.train_step(conf, model, opt, train_loader)
+        train_data = trainer.train_step()
         
         # validation step
-        val_data = trainer.validation_step(conf, model, valid_loader)
+        val_data = trainer.validation_step()
         
         # update history
         for key in tracked:
