@@ -1,3 +1,4 @@
+seed: 42
 model:
   type: perceptron
   activation_function: ReLU
@@ -15,6 +16,9 @@ CUDA:
 train:
   loss: crossentropy
   epochs: 100
-  lr: 0.1
   verbosity: 1
+  opt:
+    name: SGD
+    lr: 0.1
+    momentum: 0.9
 

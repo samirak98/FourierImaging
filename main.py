@@ -2,23 +2,22 @@ import torch
 import yaml
 
 # custom imports
-from utils.load_model import load_model
+from utils.helpers import load_model, init_opt, fix_seed
 from utils import datasets as data
-
 import train
 
 #%% Set up variable and data for an example
-experiment_file = 'utils/experiments/MNIST-classification.yaml'
+experiment_file = 'utils/experiments/classification/MNIST.yaml'
 with open(experiment_file) as exp_file:
     conf = yaml.safe_load(exp_file)
 
-#conf = cf.conf(data_file=data_file, download=True)
+#%% fix random seed
+fix_seed(conf['seed'])
 
-# get train, validation and test loader
+#%% get train, validation and test loader
 train_loader, valid_loader, test_loader = data.load(conf['dataset'])
 
-
-#%% define the model and an instance of the best model class
+#%% define the model
 if conf['CUDA']['use_cuda']:
     device = torch.device("cuda" + ":" + str(conf['CUDA']['cuda_device']))
 else:
@@ -27,7 +26,7 @@ conf['train']['device'] = device
 model = load_model(conf['model']).to(device)
 
 #%% Initialize optimizer and lamda scheduler
-opt = torch.optim.SGD(model.parameters(), lr = conf['train']['lr'], momentum = 0.9)
+opt = init_opt(model, conf['train']['opt'])
 # initalize history
 tracked = ['train_loss', 'train_acc', 'val_loss', 'val_acc']
 history = {key: [] for key in tracked}
