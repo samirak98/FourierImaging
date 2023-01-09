@@ -1,0 +1,22 @@
+seed: 42
+model:
+  type: simple_cnn
+  activation_function: ReLU
+  sizes: [784, 200, 80, 10]
+dataset:
+  name: FashionMNIST
+  path: "../datasets"
+  train_split: 0.9
+  download: False
+  batch_size: 128
+  batch_size_test: 1000
+  num_workers: 1
+CUDA:
+  use_cuda: True
+  cuda_device: 0
+train:
+  loss: crossentropy
+  epochs: 100
+  verbosity: 1
+  opt:
+    name: Adam

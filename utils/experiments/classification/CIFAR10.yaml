@@ -1,14 +1,14 @@
 seed: 42
 model:
-  type: CNN
-  activation_function: ReLU
-  sizes: [784, 200, 80, 10]
+  type: resnet
+  size: 18
 dataset:
-  name: MNIST
+  name: CIFAR10
   path: "../datasets"
   train_split: 0.9
   download: False
   batch_size: 128
+  batch_size_test: 100
   num_workers: 1
 CUDA:
   use_cuda: True
@@ -18,6 +18,4 @@ train:
   epochs: 100
   verbosity: 1
   opt:
-    name: SGD
-    lr: 0.1
-    momentum: 0.9
+    name: Adam
