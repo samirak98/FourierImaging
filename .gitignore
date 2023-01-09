@@ -1,0 +1,5 @@
+.TODO
+/perfusion/py_scripts/test_script.py
+*.asv
+/perfusion/py_scripts/__pycache__/
+/__pycache__/
