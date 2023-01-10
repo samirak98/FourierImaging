@@ -46,7 +46,8 @@ class TrigonometricResize_2d:
         
         if new_shape[-1] < newft_shape[-1]:
             xf_pad[:,:,:,0] = xf_pad[:,:,:,0]*2
-        x_inter = fft.ifft2(fft.ifftshift(xf_pad[:,:,:new_shape[-2],:new_shape[-1]]), norm=self.norm).type(x.dtype)
+        x_inter = fft.ifft2(fft.ifftshift(xf_pad[:,:,:new_shape[-2],:new_shape[-1]]), norm=self.norm)
+        x_inter = x_inter.real
         return x_inter
 
 # This is a modified version of https://github.com/zongyi-li/fourier_neural_operator/blob/master/fourier_2d.py

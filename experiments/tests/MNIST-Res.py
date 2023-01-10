@@ -38,7 +38,7 @@ path = '../saved_models/perceptron-MNIST'
 model.load_state_dict(torch.load(path, map_location=device))
 
 #%% eval
-downsampling = ['BILINEAR']
+downsampling = ['NEAREST']
 upsampling = ['TRIGO', 'BILINEAR', 'NEAREST', 'BICUBIC']
 combinations = [(u,d) for u in upsampling for d in downsampling]
 
