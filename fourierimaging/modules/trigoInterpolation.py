@@ -54,13 +54,9 @@ class TrigonometricResize_2d:
 # Modifications and additions are as follows:
 # - additional parameter 'parameterization' = {'spectral', 'spatial'}: determines wether the optimization is done in spectral (original) or spatial (addition) domain
 # - additional parameters 'ksize1' and 'ksize2': determines kernel height and width if parametrization=='spatial'
-# - additional parameter 'output_like' = {'input', 'kernel', 'fixed'}: determines height and width of output in the following way
-                                                                    # - 'input' (original): output shape is given by input shape (zero-padding or cutting off frequencies if necessary)
-                                                                    # - 'kernel' (addition): output shape is given by modes1 and modes2 (no zero-padding or cutting off frequencies)
-                                                                    # - 'fixed' (addition): output shape is given by parameter 'output_shape' (zero-padding or cutting off frequencies if necessary)
-# - additional parameter 'output_shape' = [int, int]: determines height and width of output if output_like=='fixed'
+# - additional parameter 'output_shape' = [int, int]: determines height and width of output
 class SpectralConv2d(nn.Module):
-    def __init__(self, in_channels, out_channels, parametrization = 'spectral', modes1=None, modes2=None, ksize1=None, ksize2=None, output_like = 'input'):
+    def __init__(self, in_channels, out_channels, output_shape, ksize1, ksize2, parametrization = 'spectral'):
         super(SpectralConv2d, self).__init__()
 
         """
@@ -72,25 +68,22 @@ class SpectralConv2d(nn.Module):
         self.parametrization = parametrization
 
         self.scale = (1 / (in_channels * out_channels))
-
+        
+        self.ksize1 = ksize1
+        self.ksize2 = ksize2
         if parametrization == 'spectral':
-            if modes1==None | modes2==None:
-                print('To use a spectral parametrization, please specify modes1 and modes2')
-                return
-            self.modes1 = modes1 
-            self.modes2 = modes2
-            self.weights1 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
-            self.weights2 = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.modes1, self.modes2, dtype=torch.cfloat))
+            self.negative_height = ksize1//2+1
+            self.negative_width = ksize2//2+1
+            self.positive_height = ksize1//2
+            self.positive_width = ksize2-ksize2//2-1
+            negative_weights = self.scale * torch.rand(in_channels, out_channels, self.negative_height, self.negative_width, dtype=torch.cfloat)
+            negative_weights[:,:,-1,-1].imag = 0 #weights should be the Fourier-coefficients of a real-valued kernel
+            self.negative_weights = nn.Parameter(negative_weights)
+            self.positive_weights = nn.Parameter(self.scale * torch.rand(in_channels, out_channels, self.positive_height, self.positive_width, dtype=torch.cfloat))
         elif parametrization == 'spatial':
-            if ksize1==None | ksize2==None:
-                print('To use a spatial parametrization, please specify ksize1 and ksize2')
-                return
-            self.ksize1 = ksize1
-            self.ksize2 = ksize2
             self.weights = nn.Parameter(self.scale*torch.rand(in_channels, out_channels, self.ksize1, self.ksize2))
 
-        self.output_like = output_like
-        ## here
+        self.output_shape = output_shape 
 
     # Complex multiplication
     def compl_mul2d(self, input, weights):
@@ -100,7 +93,21 @@ class SpectralConv2d(nn.Module):
     def forward(self, x):
         batchsize = x.shape[0]
         #Compute Fourier coeffcients up to factor of e^(- something constant)
-        x_ft = torch.fft.rfft2(x)
+        #modified: for easier handling we use fft2 instead of rfft2, even though rfft2 would be sufficient
+        x_ft = fft.fft2(x)
+
+        #Compute Fourier coefficients of kernel (odd dimensions, not shifted)
+        if self.parametrization=='spectral':
+            fkernel = torch.zeros(self.in_channels, self.out_channels, self.ksize1 + (1-self.ksize1%2), self.ksize2 + (1-self.ksize2%2), dtype = torch.cfloat) #odd dimensions
+            fkernel[:,:,:self.negative_height, :self.negative_width] = self.negative_weights
+            fkernel[:,:,:self.positive_height, -self.negative_height:] = self.positive_weights
+            fkernel = fkernel + torch.conj(torch.flip(fkernel, dims=[-2,-1]))
+
+            # zero-padding for correct output shape 
+            # HERE
+
+            fkernel = fft.ifftshift(fkernel)
+
 
         # Multiply relevant Fourier modes
         out_ft = torch.zeros(batchsize, self.out_channels,  x.size(-2), x.size(-1)//2 + 1, dtype=torch.cfloat, device=x.device)
