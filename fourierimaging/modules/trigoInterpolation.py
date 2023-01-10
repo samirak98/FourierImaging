@@ -20,7 +20,7 @@ class TrigonometricResize_2d:
         # for odd dimensions, the fft is already symmetric
         oldft_shape = old_shape + (1 - old_shape%2)
 
-        xf = torch.zeros(x.shape[0], x.shape[1], oldft_shape[-2], oldft_shape[-1], dtype=torch.cfloat)
+        xf = torch.zeros(x.shape[0], x.shape[1], oldft_shape[-2], oldft_shape[-1], dtype=torch.cfloat, device=x.device)
         xf[:,:,:old_shape[-2], :old_shape[-1]] = fft.fftshift(fft.fft2(x, norm = self.norm)) #shift for easier handling
 
         # for even dimensions, the coefficients corresponding to the nyquist frequency are split symmetrically
