@@ -69,10 +69,10 @@ def main():
         print(20*'<>')
         print('Starting test for model sizing: ' + m + ' and data sizing: ' + d)
         print(20*'<>')
-        acc = 0
-        tot_steps = 0
-        
+
         for s in sizes:
+            acc = 0
+            tot_steps = 0
             resize_data = select_sampling(d, [s,s])
             resize_model = select_sampling(m, orig_size)
             
