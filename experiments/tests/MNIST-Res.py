@@ -38,7 +38,7 @@ path = '../saved_models/perceptron-MNIST'
 model.load_state_dict(torch.load(path, map_location=device))
 
 #%% eval
-downsampling = ['NEAREST']
+downsampling = ['BILINEAR']
 upsampling = ['TRIGO', 'BILINEAR', 'NEAREST', 'BICUBIC']
 combinations = [(u,d) for u in upsampling for d in downsampling]
 
@@ -57,7 +57,7 @@ def select_sampling(name, size):
         
 
 size_step = 1
-sizes = np.arange(3,28,size_step)
+sizes = np.arange(3,28+1,size_step)
 orig_size = [28,28]
 
 
