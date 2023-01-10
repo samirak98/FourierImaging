@@ -7,7 +7,7 @@ from utils import datasets as data
 import train
 
 #%% Set up variable and data for an example
-experiment_file = 'utils/experiments/classification/CIFAR10.yaml'
+experiment_file = 'utils/experiments/classification/MNIST.yaml'
 with open(experiment_file) as exp_file:
     conf = yaml.safe_load(exp_file)
 

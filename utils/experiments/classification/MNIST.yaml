@@ -7,11 +7,12 @@ dataset:
   name: MNIST
   path: "../datasets"
   train_split: 0.9
-  download: False
+  download: True
   batch_size: 128
-  num_workers: 1
+  batch_size_test: 1000
+  num_workers: 8
 CUDA:
-  use_cuda: False
+  use_cuda: True
   cuda_device: 0
 train:
   loss: crossentropy
