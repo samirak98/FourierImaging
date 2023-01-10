@@ -2,6 +2,7 @@ import torch
 from torchvision import transforms
 import yaml
 import numpy as np
+import csv
 
 # custom imports
 #%% custom imports
@@ -38,9 +39,9 @@ path = '../saved_models/perceptron-MNIST'
 model.load_state_dict(torch.load(path, map_location=device))
 
 #%% eval
-downsampling = ['BILINEAR']
-upsampling = ['TRIGO', 'BILINEAR', 'NEAREST', 'BICUBIC']
-combinations = [(u,d) for u in upsampling for d in downsampling]
+data_sizing = ['TRIGO', 'BILINEAR']
+model_sizing = ['TRIGO', 'BILINEAR', 'NEAREST', 'BICUBIC']
+combinations = [(d,m) for d in data_sizing for m in model_sizing]
 
 def select_sampling(name, size):
     if name == 'BILINEAR':
@@ -55,21 +56,21 @@ def select_sampling(name, size):
         raise ValueError('Unknown resize method: ' + name)
         
         
-
-size_step = 1
+fname = 'results/MNIST.csv'
+size_step = 27
 sizes = np.arange(3,28+1,size_step)
 orig_size = [28,28]
 
 
-
+#%%
 def main():
     model.eval()
-    
-    for m, d in combinations:
+    accs = []
+    for d, m in combinations:
+        accs_loc = []
         print(20*'<>')
-        print('Starting test for model sizing: ' + m + ' and data sizing: ' + d)
+        print('Starting test for data sizing: ' + d + ' and model sizing: ' + m)
         print(20*'<>')
-
         for s in sizes:
             acc = 0
             tot_steps = 0
@@ -90,12 +91,19 @@ def main():
                     x = resize_model(x)
                     pred = model(x)
                     acc += (pred.max(1)[1] == y).sum().item()
-                    
                     tot_steps += y.shape[0]
             print(20*'<>')
             print('Done for s='+str(s))
             print('Test Accuracy:', acc/tot_steps)
             print(20*'<>')
+            accs_loc.append(acc/tot_steps)
+        accs.append([d,m] + accs_loc)
+        
+    with open(fname, 'w') as f:
+        writer = csv.writer(f, lineterminator = '\n')
+        writer.writerow(['data sizing', 'model sizing'] + list(sizes))
+        for i in range(len(accs)):
+            writer.writerow(accs[i])
     
 if __name__ == '__main__':
     main()
