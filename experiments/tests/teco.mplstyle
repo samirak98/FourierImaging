@@ -1,0 +1,29 @@
+patch.linewidth : 0.5
+patch.facecolor : 'b'
+patch.edgecolor : 'b'
+patch.antialiased : True
+
+
+axes.facecolor : 'w'
+axes.edgecolor : 'w'
+axes.linewidth : 1
+axes.grid : True
+axes.titlesize : x-large
+axes.labelsize : large
+axes.labelcolor : 'k'
+axes.axisbelow : True
+
+
+xtick.color : 'k'
+xtick.direction : out
+
+ytick.color : 'k'
+ytick.direction : out
+
+grid.color : 'w'
+grid.linestyle : -
+
+font.family  : serif
+font.serif   : CMU Serif
+font.size    : 10
+text.usetex  : false
