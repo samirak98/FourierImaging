@@ -39,8 +39,8 @@ def load(conf):
 
         # load MNIST
         transform_train = transforms.Compose([transforms.RandomCrop(32, padding=4),
-                                          transforms.RandomHorizontalFlip(),
-                                          transforms.ToTensor()])
+                                              transforms.RandomHorizontalFlip(),
+                                              transforms.ToTensor()])
         transform_test = transforms.Compose([transforms.ToTensor()])
         train = datasets.CIFAR10(conf['path'], train=True, download=conf['download'], transform=transform_train)
         test = datasets.CIFAR10(conf['path'], train=False, download=conf['download'], transform=transform_test)
