@@ -125,5 +125,5 @@ with open('results/MNIST-save.csv', 'r') as f:
                 old_data = row[0]
                 plt.title('Data sizing: ' + row[0])
             vals = np.array(row[2:], dtype=np.float64)
-            plt.plot(vals, label=row[1])
+            plt.plot(sizes, vals, label=row[1])
             plt.legend()

@@ -15,7 +15,7 @@ from fourierimaging.utils import datasets as data
 import fourierimaging.train as train
 
 #%% Set up variable and data for an example
-experiment_file = './classification/MNIST.yaml'
+experiment_file = './classification/FMNIST.yaml'
 with open(experiment_file) as exp_file:
     conf = yaml.safe_load(exp_file)
 
