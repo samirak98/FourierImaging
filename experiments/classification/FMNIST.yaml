@@ -2,15 +2,14 @@ seed: 42
 model:
   type: simple_cnn
   activation_function: ReLU
-  sizes: [784, 200, 80, 10]
 dataset:
   name: FashionMNIST
-  path: "../datasets"
+  path: "../../datasets"
   train_split: 0.9
-  download: False
+  download: True
   batch_size: 128
   batch_size_test: 1000
-  num_workers: 1
+  num_workers: 8
 CUDA:
   use_cuda: True
   cuda_device: 0
@@ -20,3 +19,4 @@ train:
   verbosity: 1
   opt:
     name: Adam
+    lr_scheduler: Plateau

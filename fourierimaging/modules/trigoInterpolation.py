@@ -20,7 +20,7 @@ class TrigonometricResize_2d:
         # for odd dimensions, the fft is already symmetric
         oldft_shape = old_shape + (1 - old_shape%2)
 
-        xf = torch.zeros(x.shape[0], x.shape[1], oldft_shape[-2], oldft_shape[-1], dtype=torch.cfloat)
+        xf = torch.zeros(x.shape[0], x.shape[1], oldft_shape[-2], oldft_shape[-1], dtype=torch.cfloat, device=x.device)
         xf[:,:,:old_shape[-2], :old_shape[-1]] = fft.fftshift(fft.fft2(x, norm = self.norm)) #shift for easier handling
 
         # for even dimensions, the coefficients corresponding to the nyquist frequency are split symmetrically
@@ -46,7 +46,8 @@ class TrigonometricResize_2d:
         
         if new_shape[-1] < newft_shape[-1]:
             xf_pad[:,:,:,0] = xf_pad[:,:,:,0]*2
-        x_inter = fft.ifft2(fft.ifftshift(xf_pad[:,:,:new_shape[-2],:new_shape[-1]]), norm=self.norm).type(x.dtype)
+        x_inter = fft.ifft2(fft.ifftshift(xf_pad[:,:,:new_shape[-2],:new_shape[-1]]), norm=self.norm)
+        x_inter = x_inter.real
         return x_inter
 
 # This is a modified version of https://github.com/zongyi-li/fourier_neural_operator/blob/master/fourier_2d.py
