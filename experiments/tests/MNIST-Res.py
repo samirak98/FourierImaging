@@ -3,6 +3,7 @@ from torchvision import transforms
 import yaml
 import numpy as np
 import csv
+import matplotlib.pyplot as plt
 
 # custom imports
 #%% custom imports
@@ -39,7 +40,7 @@ path = '../saved_models/perceptron-MNIST'
 model.load_state_dict(torch.load(path, map_location=device))
 
 #%% eval
-data_sizing = ['TRIGO', 'BILINEAR']
+data_sizing = ['TRIGO', 'BILINEAR', 'NEAREST', 'BICUBIC']
 model_sizing = ['TRIGO', 'BILINEAR', 'NEAREST', 'BICUBIC']
 combinations = [(d,m) for d in data_sizing for m in model_sizing]
 
@@ -107,3 +108,22 @@ def main():
     
 if __name__ == '__main__':
     main()
+    
+#%% visulaize data
+plt.close('all')
+accs = []
+with open('results/MNIST-save.csv', 'r') as f:
+    reader = csv.reader(f, lineterminator = '\n')
+    
+    old_data = None
+    for i,row in enumerate(reader):
+        if i == 0:
+            sizes = row[2:]
+        else:
+            if old_data != row[0]:
+                plt.figure()
+                old_data = row[0]
+                plt.title('Data sizing: ' + row[0])
+            vals = np.array(row[2:], dtype=np.float64)
+            plt.plot(vals, label=row[1])
+            plt.legend()
