@@ -5,9 +5,9 @@ model:
   sizes: [784, 200, 80, 10]
 dataset:
   name: MNIST
-  path: "../datasets"
+  path: "../../datasets"
   train_split: 0.9
-  download: True
+  download: False
   batch_size: 128
   batch_size_test: 1000
   num_workers: 8

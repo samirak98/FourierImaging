@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
-from modules.perceptron import perceptron
-from modules.simple_cnn import simple_cnn
-from modules.resnet import load_resnet
+from ..modules.perceptron import perceptron
+from ..modules.simple_cnn import simple_cnn
+from ..modules.resnet import load_resnet
 import random
 import numpy as np
 #%% set a fixed seed

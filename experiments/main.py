@@ -2,12 +2,20 @@ import torch
 import yaml
 
 # custom imports
-from utils.helpers import load_model, init_opt, fix_seed
-from utils import datasets as data
-import train
+#%% custom imports
+from inspect import getsourcefile
+import os.path as path, sys
+current_dir = path.dirname(path.abspath(getsourcefile(lambda:0)))
+sys.path.insert(0, current_dir[:current_dir.rfind(path.sep)])
+
+import fourierimaging as fi
+
+from fourierimaging.utils.helpers import load_model, init_opt, fix_seed
+from fourierimaging.utils import datasets as data
+import fourierimaging.train as train
 
 #%% Set up variable and data for an example
-experiment_file = 'utils/experiments/classification/MNIST.yaml'
+experiment_file = './classification/MNIST.yaml'
 with open(experiment_file) as exp_file:
     conf = yaml.safe_load(exp_file)
 
