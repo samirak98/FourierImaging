@@ -57,7 +57,7 @@ def select_sampling(name, size):
         
         
 fname = 'results/MNIST.csv'
-size_step = 27
+size_step = 1
 sizes = np.arange(3,28+1,size_step)
 orig_size = [28,28]
 
