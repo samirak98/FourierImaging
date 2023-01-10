@@ -56,7 +56,7 @@ def select_sampling(name, size):
         
         
 
-size_step = 5
+size_step = 1
 sizes = np.arange(3,28,size_step)
 orig_size = [28,28]
 
