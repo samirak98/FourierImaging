@@ -19,3 +19,4 @@ train:
   verbosity: 1
   opt:
     name: Adam
+    lr_scheduler: Plateau

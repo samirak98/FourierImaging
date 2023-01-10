@@ -52,4 +52,11 @@ def init_opt(model, conf):
         opt = torch.optim.Adam(model.parameters())
     else:
         raise ValueError('Unknown optimizer: ' + conf['name'])
-    return opt
+        
+    lr_scheduler = None
+    if 'lr_scheduler' in conf:
+        if conf['lr_scheduler'] == 'Plateau':
+            lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, factor=0.7, patience=5,threshold=0.01)
+        
+    
+    return opt, lr_scheduler

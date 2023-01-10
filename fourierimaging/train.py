@@ -13,7 +13,7 @@ def select_loss(name):
     return loss_fct
 #%% the trainer class
 class trainer:
-    def __init__(self, model, opt, train_loader, valid_loader, conf):
+    def __init__(self, model, opt, lr_scheduler, train_loader, valid_loader, conf):
         self.model = model
         self.opt = opt
         self.train_loader = train_loader
@@ -21,7 +21,7 @@ class trainer:
         self.loss = select_loss(conf['loss'])
         self.device = conf['device']
         self.verbosity = conf['verbosity']
-        
+        self.lr_scheduler = lr_scheduler
 
     def train_step(self):
         # train phase
@@ -52,7 +52,8 @@ class trainer:
             train_acc += (logits.max(1)[1] == y).sum().item()
             train_loss += loss.item()
             tot_steps += y.shape[0]
-        
+        if not (self.lr_scheduler is None):
+            self.lr_scheduler.step(train_loss)
         # print accuracy and loss
         if self.verbosity > 0: 
             print(50*"-")

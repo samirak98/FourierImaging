@@ -34,11 +34,11 @@ conf['train']['device'] = device
 model = load_model(conf).to(device)
 
 #%% Initialize optimizer and lamda scheduler
-opt = init_opt(model, conf['train']['opt'])
+opt, lr_scheduler = init_opt(model, conf['train']['opt'])
 # initalize history
 tracked = ['train_loss', 'train_acc', 'val_loss', 'val_acc']
 history = {key: [] for key in tracked}
-trainer = train.trainer(model, opt, train_loader, valid_loader, conf['train'])
+trainer = train.trainer(model, opt, lr_scheduler, train_loader, valid_loader, conf['train'])
 
 
 def main():
