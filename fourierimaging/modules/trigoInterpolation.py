@@ -8,47 +8,63 @@ import torch.nn as nn
 class TrigonometricResize_2d:
     """Resize 2d image with trigonometric interpolation"""
 
-    def __init__(self, shape, norm = 'forward'):
+    def __init__(self, shape, norm = 'forward', check_comp=False):
         self.shape = shape
         self.norm = norm
+        self.check_comp = check_comp
     
     def __call__(self, x):
-
         ## Compute a symmetric Fourier Transform for easier interpolation
         old_shape = np.array(x.shape[-2:])
 
         # for odd dimensions, the fft is already symmetric
         oldft_shape = old_shape + (1 - old_shape%2)
-
         xf = torch.zeros(x.shape[0], x.shape[1], oldft_shape[-2], oldft_shape[-1], dtype=torch.cfloat, device=x.device)
-        xf[:,:,:old_shape[-2], :old_shape[-1]] = fft.fftshift(fft.fft2(x, norm = self.norm)) #shift for easier handling
+        xf[:,:,:old_shape[-2], :old_shape[-1]] =  fft.fftshift(fft.fft2(x, norm = self.norm))
 
         # for even dimensions, the coefficients corresponding to the nyquist frequency are split symmetrically
         if old_shape[-2] < oldft_shape[-2]:
-            nyquist = xf[:,:,0,:]/2
-            xf[:,:,0,:] = nyquist
-            xf[:,:,-1,:] = nyquist #this is equivalent to taking the complex conjugate of the flipped nyquist row
-        
+            xf[...,0 ,:]*= 0.5 #  = nyquist_row[:,:, 1:-1]/2
+            xf[...,-1 ,:] = xf[...,0 ,:] # nyquist_row[:,:, 1:-1]/2
+            
         if old_shape[-1] < oldft_shape[-1]:
-            nyquist = xf[:,:,:,0]/2
-            xf[:,:,:,0] = nyquist
-            xf[:,:,:,-1] = nyquist #this is equivalent to taking the complex conjugate of the flipped nyquist column
+            xf[..., :,  0]  *= 0.5#   = nyquist_col[:,:, 1:-1]/2
+            xf[..., :, -1] = xf[..., : ,  0] #nyquist_col[:,:, 1:-1]/2
+
         new_shape = np.array(self.shape)
+
+        if self.check_comp:
+            self.check_symmetry(xf, old_shape=old_shape)
         #for even dimensions, first create a finer but symmetric Fourier transform
         newft_shape = new_shape + (1-new_shape%2)
-
         pad = ((newft_shape - oldft_shape)/2).astype(int) #the difference between both ft shapes is always even
         pad_list = [pad[1], pad[1], pad[0], pad[0]] #according to torch.nn.functional.pad documentation: 'starting from the last dimension and moving forward'
-    
         xf_pad = tf.pad(xf, pad_list)
+
         if new_shape[-2] < newft_shape[-2]:
-            xf_pad[:,:,0,:] = xf_pad[:,:,0,:]*2
-        
+            xf_pad[...,0 ,:]*= 2 #  = nyquist_row[:,:, 1:-1]/2
+                      
         if new_shape[-1] < newft_shape[-1]:
-            xf_pad[:,:,:,0] = xf_pad[:,:,:,0]*2
+            xf_pad[...,: ,  0]  *= 2#   = nyquist_col[:,:, 1:-1]/2
+
         x_inter = fft.ifft2(fft.ifftshift(xf_pad[:,:,:new_shape[-2],:new_shape[-1]]), norm=self.norm)
+        
+        if self.check_comp:
+            imag_norm = torch.norm(x_inter.imag, p=float("Inf"))
+            if  imag_norm > 1e-5:
+                print('The imaginary part of the image is unusual high, norm: ' +str(imag_norm))
+                print(old_shape)
+
         x_inter = x_inter.real
         return x_inter
+
+    def check_symmetry(self, x, old_shape=None):
+        x_flip = torch.flip(x, dims=[-2,-1])
+        symmetry_check = x - torch.conj(x_flip)
+        symmetry_norm = torch.norm(symmetry_check, p=float("Inf"))
+        if  symmetry_norm > 1e-5:
+            print('Not symmetric: (norm: ' + str(symmetry_norm) + ' for old shape: ' + str(old_shape))
+
 
 # This is a modified version of https://github.com/zongyi-li/fourier_neural_operator/blob/master/fourier_2d.py
 # Modifications and additions are as follows:
