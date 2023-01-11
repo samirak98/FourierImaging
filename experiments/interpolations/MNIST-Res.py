@@ -3,7 +3,6 @@ from torchvision import transforms
 import yaml
 import numpy as np
 import csv
-import matplotlib.pyplot as plt
 
 # custom imports
 #%% custom imports
@@ -109,25 +108,3 @@ def main():
 if __name__ == '__main__':
     main()
     
-#%% visulaize data
-plt.close('all')
-plt.style.use(['./teco.mplstyle'])
-fig,ax = plt.subplots(1,4,figsize=(8.27,11.69/5))
-accs = []
-with open('results/MNIST-save.csv', 'r') as f:
-    reader = csv.reader(f, lineterminator = '\n')
-    old_data = None
-    ax_idx=-1
-    for i,row in enumerate(reader):
-        if i == 0:
-            sizes = row[2:]
-        else:
-            if old_data != row[0]:
-                #ax = fig.add_subplot(ax_idx)#plt.figure()
-                ax_idx+=1
-                old_data = row[0]
-                ax[ax_idx].set_title('Data sizing: ' + row[0])
-                
-            vals = np.array(row[2:], dtype=np.float64)
-            ax[ax_idx].plot(sizes, vals, label=row[1])
-            ax[ax_idx].legend()
