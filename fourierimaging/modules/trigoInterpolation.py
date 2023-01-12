@@ -29,35 +29,27 @@ class TrigonometricResize_2d:
         im_shape_new = np.array(self.shape)
 
         if torch.is_complex(x): # for complex valued functions, trigonometric interpolations is done by simple zero-padding of the Fourier coefficients
-            print(im_shape_old)
-            print(im_shape_new)
             shape_diff = im_shape_new - im_shape_old
             pad = np.sign(shape_diff) * np.abs(shape_diff)//2
-
             pad_list = [pad[0]]
-
-            print(pad)
             odd_bias = np.abs(shape_diff)%2
             oddity_old = im_shape_old%2
-
             pad_list = [pad[-1] + odd_bias[-1] * oddity_old[-1],\
                         pad[-1] + odd_bias[-1] * (1-oddity_old[-1]),\
                         pad[-2] + odd_bias[-2] * oddity_old[-2],\
                         pad[-2] + odd_bias[-2] * (1-oddity_old[-2])] #'starting from the last dimension and moving forward, (padding_left,padding_right, padding_top,padding_bottom)'
-            print(pad_list)
             xf = fft.fftshift(fft.fft2(x, norm = self.norm), dim=[-2,-1])
             xf_pad = tf.pad(xf, pad_list)
             x_inter = fft.ifft2(fft.ifftshift(xf_pad, dim=[-2,-1]), norm=self.norm)
         else: # for real valued functions, the coefficients have to be Hermitian symmetric
-            #xf = rfftshift(fft.rfft2(x, pad_list))
-            ft_height_old = im_shape_old[-2] + (1-im_shape_old[-2]%2) #always odd
+            ft_height_old = im_shape_old[-2] + (1 - im_shape_old[-2]%2) #always odd
             ft_width_old = im_shape_old[-1]//2 + 1 #always odd
             ft_height_new = im_shape_new[-2] + (1 - im_shape_new[-2]%2) #always odd
             ft_width_new  = im_shape_new[-1]//2 + 1 #always odd
             xf_shape = tuple(add_shape)  + (ft_height_old, ft_width_old) # shape for the unpadded trafo array
 
             pad_height = (ft_height_new - ft_height_old)//2 #the difference between both ft shapes is always even
-            pad_width = (ft_width_new - ft_width_old)//2
+            pad_width = (ft_width_new - ft_width_old)
             pad_list = [pad_width, 0, pad_height, pad_height] #'starting from the last dimension and moving forward, (padding_left,padding_right, padding_top,padding_bottom)'
             xf = torch.zeros(size=xf_shape, dtype=torch.cfloat, device=x.device)
             
@@ -65,12 +57,11 @@ class TrigonometricResize_2d:
             
             # for even dimensions, the coefficients corresponding to the nyquist frequency are split symmetrically
             if im_shape_old[-2]%2 == 0:
-                xf[...,  0, :]*= 0.5 # nyquist_row /2
+                xf[...,  0, :] *= 0.5 # nyquist_row /2
                 xf[..., -1, :] = xf[..., 0, :] # nyquist_row/2
                 
             if im_shape_old[-1]%2 == 0:
-                xf[..., :,  0]  *= 0.5 # nyquist_col/2
-                #xf[..., :, -1] = xf[..., : ,  0] # nyquist_col/2
+                xf[..., :,  0] *= 0.5 # nyquist_col/2
             
             ## Trigonometric interpolation: Zero-Padding/Cut-Off of the symmetric (odd-dimensional) Fourier transform, if needed convert to even dimensions
             #Zero-padding/cut-off to odd_dimension such that desired_dimension <= odd_dimension <= desired_dimension + 1
@@ -81,10 +72,9 @@ class TrigonometricResize_2d:
                 xf_pad[..., 0, :] *= 2
                       
             if im_shape_new[-1]%2 == 0:
-                xf_pad[...,: , 0] *= 2
+                xf_pad[..., :, 0] *= 2
 
             x_inter = fft.irfft2(irfftshift(xf_pad[..., :im_shape_new[-2], :]), s=tuple(im_shape_new), norm=self.norm)
-
         return x_inter
 
     def check_symmetry(self, x, im_shape=None, threshold=1e-5):
