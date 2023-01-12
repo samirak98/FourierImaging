@@ -16,21 +16,27 @@ import numpy as np
 
 #%%
 diff = 0
-for i in range(100,135):
-    size = [i,i+3]
+for i in range(100,145):
+    add_y = np.random.randint(10,20)
+    size = [i, i+add_y]
     add_x = np.random.randint(10,20)
     add_y = np.random.randint(10,20)
-    size_new = [i+add_x, i+add_y]
+    #add_y = add_x
+    size_new = [size[0]+add_x, size[1]+add_y]
     sizing_new = TrigonometricResize_2d(size_new)
     sizing_re = TrigonometricResize_2d(size)
 
-    x = torch.rand(size=size, dtype=torch.cfloat)
+    dtypes = [torch.float, torch.cfloat]
+    for dtype in dtypes:
+        x = torch.rand(size=size, dtype=dtype)
+        x_new = sizing_new(x)
+        re_x = sizing_re(x_new)
 
-    x_new = sizing_new(x)
-    re_x = sizing_re(x_new)
+        loc_diff = torch.norm(x-re_x, p=float('inf'))
+        print('Sizing from '+str(x.shape)+ ' to ' + str(x_new.shape)\
+            + ' yields an error: ' + str(loc_diff) + ' for dtype '\
+            + str(dtype))
 
-    loc_diff = torch.norm(x-re_x, p=float('inf'))
-    print('Sizing from '+str(x.shape)+ ' to ' + str(x_new.shape) + ' yields an error: ' + str(loc_diff))
+        diff = max(loc_diff, diff)
 
-    diff = max(loc_diff, diff)
-print(diff)
+print('The total max difference is' + str(diff))
