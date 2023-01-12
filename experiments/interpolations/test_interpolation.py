@@ -16,18 +16,21 @@ import numpy as np
 
 #%%
 diff = 0
-for i in range(100,105):
-    size = [i,i]
-    add = np.random.randint(10)
-    print(add)
-    new_size = [i+add,i+add]
-    new_sizing = TrigonometricResize_2d(new_size)
-    re_sizing = TrigonometricResize_2d(size)
+for i in range(100,135):
+    size = [i,i+3]
+    add_x = np.random.randint(10,20)
+    add_y = np.random.randint(10,20)
+    size_new = [i+add_x, i+add_y]
+    sizing_new = TrigonometricResize_2d(size_new)
+    sizing_re = TrigonometricResize_2d(size)
 
-    x = torch.rand(size=size)
+    x = torch.rand(size=size, dtype=torch.cfloat)
 
-    new_x = new_sizing(x)
-    re_x = re_sizing(new_x)
+    x_new = sizing_new(x)
+    re_x = sizing_re(x_new)
 
-    diff = max(torch.norm(x-re_x, p=float('inf')), diff)
+    loc_diff = torch.norm(x-re_x, p=float('inf'))
+    print('Sizing from '+str(x.shape)+ ' to ' + str(x_new.shape) + ' yields an error: ' + str(loc_diff))
+
+    diff = max(loc_diff, diff)
 print(diff)
