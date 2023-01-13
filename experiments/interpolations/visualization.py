@@ -5,20 +5,21 @@ import csv
 import numpy as np
 #%% visulaize data
 plt.close('all')
-plt.style.use(['seaborn'])
-default_cycler = (cycler(color=['xkcd:apple','xkcd:sky','xkcd:coral',\
-                                'xkcd:light gold','peru','tab:pink',\
+plt.style.use(['ggplot'])
+default_cycler = (cycler(color=['xkcd:apple','xkcd:sky','xkcd:grapefruit',\
+                                'xkcd:muted blue','peru','tab:pink',\
                                 'deeppink', 'steelblue', 'tan', 'sienna',\
                                 'olive', 'coral']))
-rc('font',**{'family':'lmodern','serif':['Times'],'size':14})
+rc('font',**{'family':'lmodern','serif':['Times'],'size':10})
 rc('text', usetex=True)
 rc('lines', linewidth=1, linestyle='-')
 rc('axes', prop_cycle=default_cycler)
 
 
+
 fig,ax = plt.subplots(1,4,figsize=(8.27,11.69/5))
 accs = []
-with open('results/MNIST-save.csv', 'r') as f:
+with open('results/MNIST-save2.csv', 'r') as f:
     reader = csv.reader(f, lineterminator = '\n')
     old_data = None
     ax_idx=-1
@@ -35,9 +36,10 @@ with open('results/MNIST-save.csv', 'r') as f:
             vals = np.array(row[2:], dtype=np.float64)
             ax[ax_idx].plot(sizes, vals, label=row[1])
             ax[ax_idx].legend()
+            ax[ax_idx].xaxis.set_ticks([3,7,14,21,28])
  
 #%%
-save = False
+save = True
 if save:
     plt.tight_layout(pad=0.1)
     plt.savefig('MNIST-Interpolation.pdf')
