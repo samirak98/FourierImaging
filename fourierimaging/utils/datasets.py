@@ -44,6 +44,41 @@ def load(conf):
         transform_test = transforms.Compose([transforms.ToTensor()])
         train = datasets.CIFAR10(conf['path'], train=True, download=conf['download'], transform=transform_train)
         test = datasets.CIFAR10(conf['path'], train=False, download=conf['download'], transform=transform_test)
+    elif conf['name'] == "STANFORDCARS":
+        im_shape = [3,224,224]
+        conf['im_shape'] = [3,224,224]
+        
+        # set mean and std for this dataset
+        conf['mean'] = 0.#torch.tensor([0.4914, 0.4822, 0.4465]).view(-1,1,1)
+        conf['std'] = 1.#torch.tensor([0.2023, 0.1994, 0.2010]).view(-1,1,1)
+
+        # transforms
+        transform_train = transforms.Compose([
+            transforms.Resize(tuple(im_shape[-2:])),
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomRotation(35),
+            transforms.RandomAdjustSharpness(sharpness_factor=2, p=0.5),
+            transforms.RandomGrayscale(p=0.5),
+            transforms.RandomPerspective(distortion_scale=0.5, p=0.5),
+            transforms.RandomPosterize(bits=2, p=0.5),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225]
+                )
+        ])
+        transform_test = transforms.Compose([
+            transforms.Resize(tuple(im_shape[-2:])),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225]
+                )
+        ])
+
+        train = datasets.StanfordCars(conf['path'], split='train', download=conf['download'], transform=transform_train)
+        test = datasets.StanfordCars(conf['path'], split='test', download=conf['download'], transform=transform_test)
+        conf['num_classes'] = len(train.classes)
     else:
         raise ValueError("Unknown dataset: " + conf['name'])
    
@@ -61,13 +96,14 @@ def split_loader(train, test, batch_size=128, batch_size_test=100,\
     train_count = int(train_split * total_count)
     val_count = total_count - train_count
     generator=torch.Generator().manual_seed(seed)
-    train, val = torch.utils.data.random_split(train,\
-                                [train_count, val_count],generator=generator)
-
 
     loader_kwargs = {'shuffle':True, 'pin_memory':True, 'num_workers':num_workers}
+    if val_count > 0:
+        train, val = torch.utils.data.random_split(train,\
+                                    [train_count, val_count],generator=generator)
+        valid_loader = DataLoader(val, batch_size=batch_size, **loader_kwargs)
+    else:
+        valid_loader = None
     train_loader = DataLoader(train, batch_size=batch_size, **loader_kwargs)
-    valid_loader = DataLoader(val, batch_size=batch_size, **loader_kwargs)
     test_loader = DataLoader(test, batch_size=batch_size_test, **loader_kwargs)
-
     return train_loader, valid_loader, test_loader

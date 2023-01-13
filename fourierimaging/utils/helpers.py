@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torchvision import models
 from ..modules.perceptron import perceptron
 from ..modules.simple_cnn import simple_cnn
 from ..modules.resnet import load_resnet
@@ -12,7 +13,7 @@ def fix_seed(seed=0):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed) # if you are using multi-GPU.
-    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.benchmark = True
     torch.backends.cudnn.deterministic = True
 
 #%% load model by type
@@ -36,9 +37,11 @@ def load_model(conf):
         model = simple_cnn(act_fun = act_fun,\
                            mean=conf['dataset']['mean'], std=conf['dataset']['std'])
     elif model_conf['type'] == 'resnet':
-        
         model = load_resnet(size=model_conf['size'],\
                             mean=conf['dataset']['mean'], std=conf['dataset']['std'])
+    elif model_conf['type'] == 'efficentnet':
+        model = models.efficientnet_b1(pretrained=model_conf['pretrained'], weights=models.EfficientNet_B1_Weights.DEFAULT)
+        model.classifier[1] = nn.Linear(in_features=1280, out_features=conf['dataset']['num_classes'])
     else:
         raise ValueError('Unknown model type: ' + model_conf['type'])
     
@@ -49,7 +52,7 @@ def init_opt(model, conf):
     if conf['name'] == 'SGD':
         opt = torch.optim.SGD(model.parameters(), lr = conf['lr'], momentum = conf['momentum'])
     elif conf['name'] == 'Adam':
-        opt = torch.optim.Adam(model.parameters())
+        opt = torch.optim.Adam(model.parameters(), lr=conf['lr'])
     else:
         raise ValueError('Unknown optimizer: ' + conf['name'])
         
