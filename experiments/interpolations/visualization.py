@@ -39,7 +39,7 @@ with open('results/MNIST-save2.csv', 'r') as f:
             ax[ax_idx].xaxis.set_ticks([3,7,14,21,28])
  
 #%%
-save = True
+save = False
 if save:
     plt.tight_layout(pad=0.1)
     plt.savefig('MNIST-Interpolation.pdf')
