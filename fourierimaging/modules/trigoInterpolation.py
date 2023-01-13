@@ -29,18 +29,7 @@ class TrigonometricResize_2d:
         im_shape_new = np.array(self.shape)
 
         if torch.is_complex(x): # for complex valued functions, trigonometric interpolations is done by simple zero-padding of the Fourier coefficients
-            shape_diff = im_shape_new - im_shape_old
-            pad = np.sign(shape_diff) * np.abs(shape_diff)//2
-            pad_list = [pad[0]]
-            odd_bias = np.abs(shape_diff)%2
-            oddity_old = im_shape_old%2
-            pad_list = [pad[-1] + odd_bias[-1] * oddity_old[-1],\
-                        pad[-1] + odd_bias[-1] * (1-oddity_old[-1]),\
-                        pad[-2] + odd_bias[-2] * oddity_old[-2],\
-                        pad[-2] + odd_bias[-2] * (1-oddity_old[-2])] #'starting from the last dimension and moving forward, (padding_left,padding_right, padding_top,padding_bottom)'
-            xf = fft.fftshift(fft.fft2(x, norm = self.norm), dim=[-2,-1])
-            xf_pad = tf.pad(xf, pad_list)
-            x_inter = fft.ifft2(fft.ifftshift(xf_pad, dim=[-2,-1]), norm=self.norm)
+            x_inter = fft.ifft2(fft.fft2(x, norm=self.norm), s=self.shape, norm=self.norm)
         else: # for real valued functions, the coefficients have to be Hermitian symmetric
             ft_height_old = im_shape_old[-2] + (1 - im_shape_old[-2]%2) #always odd
             ft_width_old = im_shape_old[-1]//2 + 1 #always odd
