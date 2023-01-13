@@ -44,12 +44,17 @@ model_sizing = ['TRIGO', 'BILINEAR', 'NEAREST', 'BICUBIC']
 combinations = [(d,m) for d in data_sizing for m in model_sizing]
 
 def select_sampling(name, size):
+    resize = torch.nn.functional.interpolate
     if name == 'BILINEAR':
-        return transforms.Resize(size, interpolation=transforms.InterpolationMode.BILINEAR)
+        return lambda x: resize(x, size=size, mode='bilinear', align_corners=True)
+        #return transforms.Resize(size, interpolation=transforms.InterpolationMode.BILINEAR)
     elif name == 'NEAREST':
         return transforms.Resize(size, interpolation=transforms.InterpolationMode.NEAREST)
     elif name == 'BICUBIC':
-        return transforms.Resize(size, interpolation=transforms.InterpolationMode.BICUBIC)
+        return lambda x: resize(x, size=size, mode='bicubic', align_corners=True)
+        #return transforms.Resize(size, interpolation=transforms.InterpolationMode.BICUBIC)
+    elif name == 'TRILINEAR':
+        return lambda x: resize(x, size=size, mode='trilinear', align_corners=True)
     elif name == 'TRIGO':
         return TrigonometricResize_2d(size)
     else:
