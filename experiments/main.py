@@ -1,5 +1,6 @@
 import torch
 import yaml
+import time
 
 # custom imports
 #%% custom imports
@@ -15,7 +16,7 @@ from fourierimaging.utils import datasets as data
 import fourierimaging.train as train
 
 #%% Set up variable and data for an example
-experiment_file = './classification/FMNIST.yaml'
+experiment_file = './classification/STANFORDCARS.yaml'
 with open(experiment_file) as exp_file:
     conf = yaml.safe_load(exp_file)
 
@@ -42,12 +43,16 @@ trainer = train.trainer(model, opt, lr_scheduler, train_loader, valid_loader, co
 
 
 def main():
-    print("Train model: " + conf['model']['type'])
+    total_params = sum(p.numel() for p in model.parameters())
+    total_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print('Train model: ' + conf['model']['type'] +\
+          ' with '+ str(total_params) + ' parameters' +\
+          ' and ' + str(total_trainable_params)+ ' trainable parameters')
+    
     for i in range(conf['train']['epochs']):
-        print(10*"<>")
-        print(20*"|")
-        print(10*"<>")
-        print('Epoch', i)
+        print(50*".")
+        print('Startig epoch: ' + str(i))
+        print(50*"=")
         
         # train_step
         train_data = trainer.train_step()
@@ -61,6 +66,15 @@ def main():
                 history[key].append(val_data[key])
             if key in train_data:
                 history[key].append(train_data[key])
+
+    if conf['train']['save']:
+        time_str = time.strftime("%Y%m%d-%H%M%S")
+        save_name = 'saved_models/' + conf['model']['type'] + '-' + time_str
+        torch.save({
+                'epoch': conf['train']['epochs'],
+                'model_state_dict': model.state_dict(),
+                }, save_name)
                 
 if __name__ == '__main__':
     main()
+    

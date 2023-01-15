@@ -3,6 +3,7 @@ from torchvision import transforms
 import yaml
 import numpy as np
 import csv
+from tqdm.auto import tqdm
 
 # custom imports
 #%% custom imports
@@ -17,7 +18,7 @@ from fourierimaging.utils import datasets as data
 import fourierimaging.train as train
 
 #%% Set up variable and data for an example
-experiment_file = '../classification/FMNIST.yaml'
+experiment_file = '../classification/STANFORDCARS.yaml'
 with open(experiment_file) as exp_file:
     conf = yaml.safe_load(exp_file)
 
@@ -35,8 +36,8 @@ else:
     device = "cpu"
 conf['train']['device'] = device
 model = load_model(conf).to(device)
-path = '../saved_models/simple_cnn-FMNIST'
-model.load_state_dict(torch.load(path, map_location=device))
+path = '../saved_models/efficentnet-20230113-173512'
+model.load_state_dict(torch.load(path, map_location=device)['model_state_dict'])
 
 #%% eval
 data_sizing = ['TRIGO', 'BILINEAR', 'NEAREST', 'BICUBIC']
@@ -46,25 +47,26 @@ combinations = [(d,m) for d in data_sizing for m in model_sizing]
 def select_sampling(name, size):
     resize = torch.nn.functional.interpolate
     if name == 'BILINEAR':
-        return lambda x: resize(x, size=size, mode='bilinear', align_corners=False, antialias=True)
+        return lambda x: resize(x, size=size, mode='bilinear')
         #return transforms.Resize(size, interpolation=transforms.InterpolationMode.BILINEAR)
     elif name == 'NEAREST':
         return transforms.Resize(size, interpolation=transforms.InterpolationMode.NEAREST)
     elif name == 'BICUBIC':
-        return lambda x: resize(x, size=size, mode='bicubic', align_corners=False, antialias=True)
+        return lambda x: resize(x, size=size, mode='bicubic')
         #return transforms.Resize(size, interpolation=transforms.InterpolationMode.BICUBIC)
     elif name == 'TRILINEAR':
-        return lambda x: resize(x, size=size, mode='trilinear', align_corners=False, antialias=True)
+        return lambda x: resize(x, size=size, mode='trilinear')
     elif name == 'TRIGO':
         return TrigonometricResize_2d(size)
     else:
         raise ValueError('Unknown resize method: ' + name)
         
         
-fname = 'results/FMNIST.csv'
-size_step = 1
-sizes = np.arange(3,28+1,size_step)
-orig_size = [28,28]
+fname = 'results/STANFORDCARS.csv'
+size_step = 11
+im_size = 224
+sizes = np.arange(5,im_size+1,size_step)
+orig_size = [im_size, im_size]
 
 
 #%%
@@ -73,34 +75,29 @@ def main():
     accs = []
     for d, m in combinations:
         accs_loc = []
-        print(20*'<>')
+        print(50*'.')
         print('Starting test for data sizing: ' + d + ' and model sizing: ' + m)
-        print(20*'<>')
+        print(50*'-')
         for s in sizes:
             acc = 0
             tot_steps = 0
             resize_data = select_sampling(d, [s,s])
             resize_model = select_sampling(m, orig_size)
-            
+            print(50*'.')
+            print('Starting for s='+str(s))
             with torch.no_grad():
-                for batch_idx, (x, y) in enumerate(test_loader):
+                for batch_idx, (x, y) in tqdm(enumerate(test_loader), total=len(test_loader)):
                     # get batch data
                     x, y = x.to(device), y.to(device)
-                    
-                    #resize input
-                    
+                    #resize input 
                     x = resize_data(x)
-                   
-                    
                     # evaluate
                     x = resize_model(x)
                     pred = model(x)
                     acc += (pred.max(1)[1] == y).sum().item()
                     tot_steps += y.shape[0]
-            print(20*'<>')
-            print('Done for s='+str(s))
-            print('Test Accuracy:', acc/tot_steps)
-            print(20*'<>')
+            print('Test accuracy [percentage]:', 100*acc/tot_steps)
+            print(50*'-')
             accs_loc.append(acc/tot_steps)
         accs.append([d,m] + accs_loc)
         

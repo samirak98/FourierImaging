@@ -1,0 +1,24 @@
+seed: 42
+model:
+  type: efficentnet
+  pretrained: True
+dataset:
+  name: STANFORDCARS
+  path: "../../datasets"
+  train_split: 1.0
+  download: True
+  batch_size: 34
+  batch_size_test: 60
+  num_workers: 4
+CUDA:
+  use_cuda: True
+  cuda_device: 0
+train:
+  loss: crossentropy
+  epochs: 50
+  verbosity: 1
+  opt:
+    name: Adam
+    lr: 0.0001
+  save: True
+
