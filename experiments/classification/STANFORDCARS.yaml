@@ -8,7 +8,7 @@ dataset:
   train_split: 1.0
   download: True
   batch_size: 34
-  batch_size_test: 30
+  batch_size_test: 60
   num_workers: 4
 CUDA:
   use_cuda: True
