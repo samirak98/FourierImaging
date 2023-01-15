@@ -1,3 +1,4 @@
+#%%
 import torch
 from torchvision import transforms
 import yaml
@@ -40,3 +41,26 @@ for i in range(100,145):
         diff = max(loc_diff, diff)
 
 print('The total max difference is' + str(diff))
+
+#%%
+a = torch.rand(7,7)
+arft = torch.fft.rfft2(a)
+print(arft.shape)
+ainter = torch.fft.irfft2(arft, s=(7,6))
+ainterrft = torch.fft.rfft2(ainter)
+ainterinter = torch.fft.irfft2(arft, s=(7,6))
+print(ainterrft.shape)
+print(torch.norm(arft - ainterrft))
+
+# %%
+img = torch.rand(1,1,8,8)
+resize = torch.nn.functional.interpolate
+inter_img = resize(img, (4,4), mode='bilinear', align_corners=False)
+print(img)
+print(inter_img)
+# %%
+a = torch.rand(5,5)
+a_ishift = torch.fft.ifftshift(a)
+
+print(a)
+print(a_ishift)
