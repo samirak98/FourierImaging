@@ -1,23 +1,25 @@
 seed: 42
 model:
-  type: simple_cnn
-  activation_function: ReLU
+  type: resnet
+  size: 18
+  pretrained: True
 dataset:
-  name: FashionMNIST
+  name: CUB200
   path: "../../datasets"
-  train_split: 0.9
+  train_split: 1.0
   download: True
-  batch_size: 128
-  batch_size_test: 1000
-  num_workers: 8
+  batch_size: 32
+  batch_size_test: 60
+  num_workers: 4
 CUDA:
   use_cuda: True
   cuda_device: 0
 train:
   loss: crossentropy
-  epochs: 100
+  epochs: 10
   verbosity: 1
   opt:
     name: Adam
     lr: 0.0001
-    lr_scheduler: Plateau
+  save: True
+

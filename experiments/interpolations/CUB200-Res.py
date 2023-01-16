@@ -18,7 +18,7 @@ from fourierimaging.utils import datasets as data
 import fourierimaging.train as train
 
 #%% Set up variable and data for an example
-experiment_file = '../classification/STANFORDCARS.yaml'
+experiment_file = '../classification/CUB200.yaml'
 with open(experiment_file) as exp_file:
     conf = yaml.safe_load(exp_file)
 
@@ -36,7 +36,7 @@ else:
     device = "cpu"
 conf['train']['device'] = device
 model = load_model(conf).to(device)
-path = '../saved_models/efficentnet-20230113-173512'
+path = '../saved_models/resnet-18-CUB200'
 model.load_state_dict(torch.load(path, map_location=device)['model_state_dict'])
 
 #%% eval
@@ -64,7 +64,7 @@ def select_sampling(name, size):
         raise ValueError('Unknown resize method: ' + name)
         
         
-fname = 'results/STANFORDCARS.csv'
+fname = 'results/CUB200.csv'
 size_step = 11
 im_size = 224
 sizes = np.arange(5,im_size+1,size_step)

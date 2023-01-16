@@ -4,9 +4,9 @@ model:
   size: 18
 dataset:
   name: CIFAR10
-  path: "../datasets"
+  path: "../../datasets"
   train_split: 0.9
-  download: False
+  download: True
   batch_size: 128
   batch_size_test: 100
   num_workers: 1
@@ -19,3 +19,4 @@ train:
   verbosity: 1
   opt:
     name: Adam
+    lr: 0.0001

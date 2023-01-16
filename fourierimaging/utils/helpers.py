@@ -37,8 +37,9 @@ def load_model(conf):
         model = simple_cnn(act_fun = act_fun,\
                            mean=conf['dataset']['mean'], std=conf['dataset']['std'])
     elif model_conf['type'] == 'resnet':
-        model = load_resnet(size=model_conf['size'],\
-                            mean=conf['dataset']['mean'], std=conf['dataset']['std'])
+        model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+        # model = load_resnet(size=model_conf['size'],\
+        #                     mean=conf['dataset']['mean'], std=conf['dataset']['std'], num_classes=conf['dataset']['num_classes'])
     elif model_conf['type'] == 'efficentnet':
         model = models.efficientnet_b1(pretrained=model_conf['pretrained'], weights=models.EfficientNet_B1_Weights.DEFAULT)
         model.classifier[1] = nn.Linear(in_features=1280, out_features=conf['dataset']['num_classes'])

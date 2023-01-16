@@ -63,7 +63,7 @@ class trainer:
         # print accuracy and loss
         if self.verbosity > 0: 
             print(50*"-")
-            print('Train accuracy in percent: ', 100*train_acc/sample_ctr)
+            print('Train accuracy: ' + str(100*train_acc/sample_ctr) +'[%]')
             print('Train loss:', train_loss/epoch_ctr)
         return {'train_loss':train_loss, 'train_acc':train_acc/sample_ctr}
 

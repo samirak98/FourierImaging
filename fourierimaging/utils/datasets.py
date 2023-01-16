@@ -1,6 +1,8 @@
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
+from torchvision.datasets import ImageFolder
 import torch
+#import pandas as pd
 
 import os
 
@@ -79,6 +81,25 @@ def load(conf):
         train = datasets.StanfordCars(conf['path'], split='train', download=conf['download'], transform=transform_train)
         test = datasets.StanfordCars(conf['path'], split='test', download=conf['download'], transform=transform_test)
         conf['num_classes'] = len(train.classes)
+    elif conf['name'] == 'CUB200':
+        conf['mean'] = 0.#torch.tensor([0.4914, 0.4822, 0.4465]).view(-1,1,1)
+        conf['std'] = 1.#torch.tensor([0.2023, 0.1994, 0.2010]).view(-1,1,1)
+        im_shape = [3,224,224]
+        conf['im_shape'] = im_shape
+        transform = transforms.Compose([
+                            transforms.Resize(tuple(im_shape[-2:])),
+                            transforms.ToTensor(),
+                            ])
+        #train = torch.utils.data.DataLoader(conf['path']+'CUB_200_2011.tgz')
+        path = conf['path']+'/CUB200'
+        train = ImageFolder(path+'/train', transform=transform)
+        test = ImageFolder(path+'/test', transform=transform)
+        conf['num_classes'] = len(train.classes)
+        # df=pd.read_csv(path + '/birds.csv")
+
+        # train = df[df['data set']=='train'].reset_index(drop=True)
+        # test  = df[df['data set']=='test'].reset_index(drop=True)
+
     else:
         raise ValueError("Unknown dataset: " + conf['name'])
    
