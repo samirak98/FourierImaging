@@ -95,7 +95,7 @@ class trainer:
             # print accuracy
             if self.verbosity > 0: 
                 print(50*"-")
-                print('Validation Accuracy:', val_acc/tot_steps)
+                print('Validation Accuracy: ' + str(100 * val_acc/tot_steps)+'[%]')
             return {'val_loss':val_loss, 'val_acc':val_acc/tot_steps}
 
 def test_step(conf, model, test_loader, attack = None, verbosity = 1):

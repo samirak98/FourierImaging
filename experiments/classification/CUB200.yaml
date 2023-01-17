@@ -2,21 +2,23 @@ seed: 42
 model:
   type: resnet
   size: 18
-  pretrained: True
+  pretrained: False
+  padding_mode: 'zeros'
 dataset:
   name: CUB200
   path: "../../datasets"
   train_split: 1.0
   download: True
   batch_size: 32
-  batch_size_test: 60
+  batch_size_test: 32
   num_workers: 4
+  im_shape: [112,112]
 CUDA:
   use_cuda: True
   cuda_device: 0
 train:
   loss: crossentropy
-  epochs: 10
+  epochs: 40
   verbosity: 1
   opt:
     name: Adam
