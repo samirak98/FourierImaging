@@ -6,7 +6,8 @@ import numpy as np
 #%% visulaize data
 plt.close('all')
 plt.style.use(['ggplot'])
-default_cycler = (cycler(color=['xkcd:apple','xkcd:sky','xkcd:grapefruit',\
+default_cycler = (cycler(color=['grey', 
+                                'xkcd:apple','xkcd:sky','xkcd:grapefruit',\
                                 'xkcd:muted blue','peru','tab:pink',\
                                 'deeppink', 'steelblue', 'tan', 'sienna',\
                                 'olive', 'coral']))
@@ -17,9 +18,9 @@ rc('axes', prop_cycle=default_cycler)
 
 
 
-fig,ax = plt.subplots(1,4,figsize=(8.27,11.69/5))
+fig,ax = plt.subplots(1,4,figsize=(8.27,11.69/5), sharey=True)
 accs = []
-with open('results/MNIST-save2.csv', 'r') as f:
+with open('results/CUB200.csv', 'r') as f:
     reader = csv.reader(f, lineterminator = '\n')
     old_data = None
     ax_idx=-1
@@ -35,11 +36,13 @@ with open('results/MNIST-save2.csv', 'r') as f:
                 
             vals = np.array(row[2:], dtype=np.float64)
             ax[ax_idx].plot(sizes, vals, label=row[1])
-            ax[ax_idx].legend()
-            ax[ax_idx].xaxis.set_ticks([3,7,14,21,28])
+            #ax[ax_idx].xaxis.set_ticks([3,7,14,21,28])
+            ax[ax_idx].xaxis.set_ticks(np.arange(3,214,50))
+            if ax_idx==0:
+                ax[ax_idx].legend()
  
 #%%
 save = False
 if save:
     plt.tight_layout(pad=0.1)
-    plt.savefig('MNIST-Interpolation.pdf')
+    plt.savefig('FMNIST-Interpolation.pdf')
