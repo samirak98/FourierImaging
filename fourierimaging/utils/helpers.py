@@ -3,7 +3,7 @@ import torch.nn as nn
 from torchvision import models
 from ..modules.perceptron import perceptron
 from ..modules.simple_cnn import simple_cnn
-from ..modules.resnet import load_resnet
+from ..modules.resnet import resnet18
 import random
 import numpy as np
 #%% set a fixed seed
@@ -37,7 +37,10 @@ def load_model(conf):
         model = simple_cnn(act_fun = act_fun,\
                            mean=conf['dataset']['mean'], std=conf['dataset']['std'])
     elif model_conf['type'] == 'resnet':
-        model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+        if model_conf['pretrained']:
+            model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+        else:
+            model = resnet18(padding_mode=model_conf['padding_mode'])
         # model = load_resnet(size=model_conf['size'],\
         #                     mean=conf['dataset']['mean'], std=conf['dataset']['std'], num_classes=conf['dataset']['num_classes'])
     elif model_conf['type'] == 'efficentnet':

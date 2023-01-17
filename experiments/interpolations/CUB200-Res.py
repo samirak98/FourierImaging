@@ -35,12 +35,13 @@ if conf['CUDA']['use_cuda'] and torch.cuda.is_available():
 else:
     device = "cpu"
 conf['train']['device'] = device
+
 model = load_model(conf).to(device)
 path = '../saved_models/resnet-18-CUB200'
 model.load_state_dict(torch.load(path, map_location=device)['model_state_dict'])
 
 #%% eval
-data_sizing = ['TRIGO', 'BILINEAR', 'NEAREST', 'BICUBIC']
+data_sizing = ['NONE','TRIGO', 'BILINEAR', 'NEAREST', 'BICUBIC']
 model_sizing = ['NONE','TRIGO', 'BILINEAR', 'NEAREST', 'BICUBIC']
 combinations = [(d,m) for d in data_sizing for m in model_sizing]
 
@@ -64,10 +65,10 @@ def select_sampling(name, size):
         raise ValueError('Unknown resize method: ' + name)
         
         
-fname = 'results/CUB200.csv'
+fname = 'results/CUB200-circular.csv'
 size_step = 11
 im_size = 224
-sizes = np.arange(5,im_size+1,size_step)
+sizes = np.arange(5,225,size_step)
 orig_size = [im_size, im_size]
 
 
@@ -87,8 +88,9 @@ def main():
             resize_model = select_sampling(m, orig_size)
             print(50*'.')
             print('Starting for s='+str(s))
+            loader = valid_loader
             with torch.no_grad():
-                for batch_idx, (x, y) in tqdm(enumerate(test_loader), total=len(test_loader)):
+                for batch_idx, (x, y) in tqdm(enumerate(loader), total=len(loader)):
                     # get batch data
                     x, y = x.to(device), y.to(device)
                     #resize input 

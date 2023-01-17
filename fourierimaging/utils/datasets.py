@@ -1,6 +1,7 @@
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
+from fourierimaging.modules import TrigonometricResize_2d
 import torch
 #import pandas as pd
 
@@ -9,7 +10,7 @@ import os
 
 #%% 
 def load(conf):
-    train, valid, test, train_loader, valid_loader, test_loader = [None] * 6
+    valid = None
     if conf['name'] == "MNIST":
         conf['im_shape'] = [1,28,28]
         
@@ -84,26 +85,27 @@ def load(conf):
     elif conf['name'] == 'CUB200':
         conf['mean'] = 0.#torch.tensor([0.4914, 0.4822, 0.4465]).view(-1,1,1)
         conf['std'] = 1.#torch.tensor([0.2023, 0.1994, 0.2010]).view(-1,1,1)
-        im_shape = [3,224,224]
-        conf['im_shape'] = im_shape
+        im_shape = conf['im_shape']
         transform = transforms.Compose([
-                            transforms.Resize(tuple(im_shape[-2:])),
+                            #transforms.Resize(tuple(im_shape[-2:])),
+                            transforms.ToTensor(),
+                            #transforms.Resize(tuple(im_shape[-2:])),
+                            #TrigonometricResize_2d(im_shape[-2:]),
+                            ])
+
+        transform_test = transforms.Compose([
                             transforms.ToTensor(),
                             ])
-        #train = torch.utils.data.DataLoader(conf['path']+'CUB_200_2011.tgz')
         path = conf['path']+'/CUB200'
         train = ImageFolder(path+'/train', transform=transform)
         test = ImageFolder(path+'/test', transform=transform)
+        valid = ImageFolder(path+'/valid', transform=transform)
         conf['num_classes'] = len(train.classes)
-        # df=pd.read_csv(path + '/birds.csv")
-
-        # train = df[df['data set']=='train'].reset_index(drop=True)
-        # test  = df[df['data set']=='test'].reset_index(drop=True)
-
     else:
         raise ValueError("Unknown dataset: " + conf['name'])
    
     tr_loader, v_loader, te_loader = split_loader(train, test,\
+                                                  valid = valid,
                                                   batch_size = conf['batch_size'],\
                                                   batch_size_test = conf['batch_size_test'],\
                                                   train_split=conf['train_split'],\
@@ -111,20 +113,22 @@ def load(conf):
         
     return tr_loader, v_loader, te_loader
 #%% Define DataLoaders and split in train, valid, test       
-def split_loader(train, test, batch_size=128, batch_size_test=100,\
+def split_loader(train, test, valid=None, batch_size=128, batch_size_test=100,\
                  train_split=0.9, num_workers=1, seed=42):
     total_count = len(train)
     train_count = int(train_split * total_count)
     val_count = total_count - train_count
     generator=torch.Generator().manual_seed(seed)
 
-    loader_kwargs = {'shuffle':True, 'pin_memory':True, 'num_workers':num_workers}
-    if val_count > 0:
-        train, val = torch.utils.data.random_split(train,\
+    loader_kwargs = {'pin_memory':True, 'num_workers':num_workers}
+    if not (valid is None):
+        valid_loader = DataLoader(valid, batch_size=batch_size, **loader_kwargs)
+    elif val_count > 0:
+        train, valid = torch.utils.data.random_split(train,\
                                     [train_count, val_count],generator=generator)
-        valid_loader = DataLoader(val, batch_size=batch_size, **loader_kwargs)
+        valid_loader = DataLoader(valid, batch_size=batch_size, **loader_kwargs)
     else:
         valid_loader = None
-    train_loader = DataLoader(train, batch_size=batch_size, **loader_kwargs)
+    train_loader = DataLoader(train, batch_size=batch_size, shuffle=True, **loader_kwargs)
     test_loader = DataLoader(test, batch_size=batch_size_test, **loader_kwargs)
     return train_loader, valid_loader, test_loader
