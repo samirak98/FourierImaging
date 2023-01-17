@@ -112,18 +112,35 @@ class SpectralConv2d(nn.Module):
     
         #Initialize weights according to chosen parametrization
         if parametrization == 'spectral':
-            if modes1==None | modes2==None:
-                raise ValueError('To use spectral parametrization, please select modes1 and modes2. Currently modes1='+str(modes1) + 'and modes2=' +str(modes2))
+            if (modes1 == None):
+                modes1 = 0
+                print('The parameter modes1 was not specified. Using modes1 = '\
+                      +str(modes1))          
+            if (modes2 == None):
+                modes2 = 0
+                print('The parameter modes2 was not specified. Using modes2 = '\
+                      +str(modes2))
+
             self.modes1 = modes1
             self.modes2 = modes2
-            self.weights = torch.Parameter(torch.rand(in_channels, out_channels, (self.modes1-1)*2, self.modes2, dtype=torch.cfloat)) # the 2-D real FFT of a real-valued kernel with an odd number of sampling points
+            w = torch.rand(in_channels, out_channels, self.modes1*2 + 1, self.modes2+1, dtype=torch.cfloat)
+            w[:,:,0,0].imag = 0.
+            self.weights = nn.Parameter(w) # the 2-D real FFT of a real-valued kernel with an odd number of sampling points
+            
         elif parametrization == 'spatial':
-            if ksize1==None | ksize2==None:
-                raise ValueError('To use spatial parametrization, please select ksize1 and ksize2. Currently ksize1='+str(ksize1) + 'and modes2=' +str(ksize2))
+            if (ksize1 == None):
+                ksize1 = 1
+                print('The parameter ksize1 was not specified. Using ksize1 = '\
+                      +str(ksize1))          
+            if (ksize2 == None):
+                ksize2 = 1
+                print('The parameter ksize2 was not specified. Using ksize2 = '\
+                      +str(ksize2))
+                    
             self.ksize1 = ksize1
             self.ksize2 = ksize2
             self.weights = nn.Parameter(self.scale*torch.rand(in_channels, out_channels, self.ksize1, self.ksize2))
-
+            
         self.out_shape = out_shape 
         self.in_shape = in_shape
 
@@ -144,30 +161,49 @@ class SpectralConv2d(nn.Module):
         if self.out_shape == None:
             im_shape_new = x_shape
         else:
-            im_shape_old = np.array(self.out_shape)
+            im_shape_new = np.array(self.out_shape)
 
         if self.parametrization=='spectral':
-            multiplier = self.weights
+            kernel_shape = np.array([self.modes1*2 + 1, self.modes2*2+1])
+            multiplier_padded = symmetric_padding(self.weights, kernel_shape, im_shape_new + (1 - im_shape_new%2)) #odd dimensions
         elif self.parametrization=='spatial':
+            multiplier = self.convert(im_shape_old)
+            # spatial zero-padding to match image shape, then ifftshift to align center, then rfft2 and rfftshift to get multiplier, maybe this can be optimized by using the 's' parameter for rfft2
+            multiplier_padded = symmetric_padding(multiplier, im_shape_old, im_shape_new + (1 - im_shape_new%2)) #odd dimensions
+        
+        #convolution is implemented by elementwise multiplication of rfft-coefficients (only for odd dimensions, for even dimensions we interpolate to the next higher odd dimension)
+        #this could be optimized by checking dimensions first
+        x_ft_padded = symmetric_padding(rfftshift(fft.rfft2(x)), x_shape, im_shape_new + (1 - im_shape_new%2)) #odd dimensions
+        
+
+        # Return to physical space after correcting dimension if desired dimension is even
+        output = fft.irfft2(irfftshift(symmetric_padding(self.compl_mul2d(x_ft_padded, multiplier_padded),\
+                                                         im_shape_new + (1 - im_shape_new%2), im_shape_new)),\
+                                                         norm = self.norm,\
+                                                         s=tuple(im_shape_new))
+        return output
+    
+    def convert(self, im_shape):
+        if self.parametrization == 'spatial':
             kernel_shape = np.array([self.ksize1, self.ksize2])
-            shape_diff = im_shape_old - kernel_shape
+            shape_diff = im_shape - kernel_shape
             pad = np.sign(shape_diff) * np.abs(shape_diff)//2
             odd_bias = np.abs(shape_diff)%2
             oddity_old = kernel_shape%2
             pad_list = [pad[-1] + odd_bias[-1] * oddity_old[-1],\
             pad[-1] + odd_bias[-1] * (1-oddity_old[-1]),\
             pad[-2] + odd_bias[-2] * oddity_old[-2],\
-            pad[-2] + odd_bias[-2] * (1-oddity_old[-2])] #'starting from the last dimension and moving forward, (padding_left,padding_right, padding_top,padding_bottom)'
-            
-            # spatial zero-padding to match image shape, then ifftshift to align center, then rfft2 and rfftshift to get multiplier, maybe this can be optimized by using the 's' parameter for rfft2
-            multiplier = rfftshift(fft.rfft2(fft.ifftshift(torch.pad(self.weights, pad_list), dim = [-2,-1]), norm = self.norm))
+            pad[-2] + odd_bias[-2] * (1-oddity_old[-2])] # starting from the last dimension and moving forward, (padding_left,padding_right, padding_top,padding_bottom)'
         
-        #convolution is implemented by elementwise multiplication of rfft-coefficients (only for odd dimensions, for even dimensions we interpolate to the next higher odd dimension)
-        #this could be optimized by checking dimensions first
-        x_ft_padded = symmetric_padding(rfftshift(fft.rfft2(x)), x_shape, im_shape_new + (1 - im_shape_new%2)) #odd dimensions
-        multiplier_padded = symmetric_padding(multiplier, im_shape_old, im_shape_new + (1 - im_shape_new%2)) #odd dimensions
+            return rfftshift(fft.rfft2(fft.ifftshift(tf.pad(self.weights, pad_list), dim = [-2,-1]), norm = self.norm))
+        else:
+            kernel_shape = np.array([self.modes1*2 + 1, self.modes2*2+1])
+            multiplier_padded = symmetric_padding(self.weights, kernel_shape, im_shape) #odd dimensions
 
-        # Return to physical space after correcting dimension if desired dimension is even
-        output = fft.irfft2(irfftshift(symmetric_padding(self.compl_mul2d(x_ft_padded, multiplier_padded),  im_shape_new + (1 - im_shape_new%2), im_shape_new)), norm = self.norm)
-
-        return output
+            return fft.fftshift(\
+                       fft.irfft2(\
+                           irfftshift(multiplier_padded),\
+                           s=im_shape, norm=self.norm
+                           ),\
+                        dim = [-2,-1]\
+                        )
