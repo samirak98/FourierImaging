@@ -11,7 +11,7 @@ sys.path.append(os.path.abspath('../../'))
 import fourierimaging as fi
 
 from fourierimaging.utils.helpers import load_model, init_opt, fix_seed
-from fourierimaging.modules import TrigonometricResize_2d, SpectralConv2d
+from fourierimaging.modules import TrigonometricResize_2d, SpectralConv2d, spectral_to_spatial
 from fourierimaging.utils import datasets as data
 import fourierimaging.train as train
 import numpy as np
@@ -51,7 +51,7 @@ model_spatial = SpectralConv2d(1, out_channels,\
                                parametrization='spatial',\
                                out_shape=out_shape,
                                ksize1=28, ksize2=28)
-model_spatial.weights.data = model.convert([28, 28])
+model_spatial.weights.data = spectral_to_spatial(model.weights, [28, 28])
 
 w = model.weights
 w_spatial = model_spatial.weights
@@ -62,7 +62,6 @@ x = torch.rand(size=[1,1,28,28])
 mx = model(x)
 msx = model_spatial(x)
 
-print(torch.max(mx-msx))
 
 
 #%%

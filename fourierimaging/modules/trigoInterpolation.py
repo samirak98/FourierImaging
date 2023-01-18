@@ -96,7 +96,12 @@ class TrigonometricResize_2d:
 # - additional parameters 'ksize1' and 'ksize2': determines kernel height and width if parametrization=='spatial'
 # - additional parameter 'out_shape' = [int, int]: determines height and width of output. If not chosen, output shape will be the same as input shape
 class SpectralConv2d(nn.Module):
-    def __init__(self, in_channels, out_channels, out_shape=None, in_shape=None, parametrization = 'spectral', modes1=None, modes2=None, ksize1=None, ksize2=None, norm = 'forward'):
+    def __init__(self, in_channels, out_channels, weight=None,\
+                 out_shape=None, in_shape=None, parametrization = 'spectral',\
+                 modes1 = None, modes2 = None,\
+                 ksize1 = None, ksize2 = None,\
+                 stride = 1, norm = 'forward',\
+                ):
         super(SpectralConv2d, self).__init__()
 
         """
@@ -105,49 +110,58 @@ class SpectralConv2d(nn.Module):
 
         self.in_channels = in_channels
         self.out_channels = out_channels
+        self.out_shape = out_shape 
+        self.in_shape = in_shape
         self.parametrization = parametrization
+        self.stride = stride
         self.norm = norm
 
         self.scale = (1 / (in_channels * out_channels))
     
-        #Initialize weights according to chosen parametrization
+        #Initialize weight according to chosen parametrization
         if parametrization == 'spectral':
-            if (modes1 == None):
-                modes1 = 0
-                print('The parameter modes1 was not specified. Using modes1 = '\
-                      +str(modes1))          
-            if (modes2 == None):
-                modes2 = 0
-                print('The parameter modes2 was not specified. Using modes2 = '\
-                      +str(modes2))
+            if weight is None:
+                if (modes1 == None):
+                    modes1 = 0
+                    print('The parameter modes1 was not specified. Using modes1 = '\
+                          +str(modes1))          
+                if (modes2 == None):
+                    modes2 = 0
+                    print('The parameter modes2 was not specified. Using modes2 = '\
+                          +str(modes2))
+                        
+                weight = torch.rand(in_channels, out_channels,\
+                                     modes1*2 + 1, modes2+1,\
+                                     dtype=torch.cfloat)
+                weight[:,:,0,0].imag = 0.
+                
+                
+            self.weight = nn.Parameter(weight) # the 2-D real FFT of a real-valued kernel with an odd number of sampling points
+            
+            self.modes1 = (self.weight.shape[-2]-1)//2
+            self.modes2 = self.weight.shape[-1]-1
 
-            self.modes1 = modes1
-            self.modes2 = modes2
-            w = torch.rand(in_channels, out_channels, self.modes1*2 + 1, self.modes2+1, dtype=torch.cfloat)
-            w[:,:,0,0].imag = 0.
-            self.weights = nn.Parameter(w) # the 2-D real FFT of a real-valued kernel with an odd number of sampling points
             
         elif parametrization == 'spatial':
-            if (ksize1 == None):
-                ksize1 = 1
-                print('The parameter ksize1 was not specified. Using ksize1 = '\
-                      +str(ksize1))          
-            if (ksize2 == None):
-                ksize2 = 1
-                print('The parameter ksize2 was not specified. Using ksize2 = '\
-                      +str(ksize2))
+            if weight is None:
+                if (ksize1 == None):
+                    ksize1 = 1
+                    print('The parameter ksize1 was not specified. Using ksize1 = '\
+                          +str(ksize1))          
+                if (ksize2 == None):
+                    ksize2 = 1
+                    print('The parameter ksize2 was not specified. Using ksize2 = '\
+                          +str(ksize2))
                     
-            self.ksize1 = ksize1
-            self.ksize2 = ksize2
-            self.weights = nn.Parameter(self.scale*torch.rand(in_channels, out_channels, self.ksize1, self.ksize2))
-            
-        self.out_shape = out_shape 
-        self.in_shape = in_shape
+                weight = self.scale*torch.rand(in_channels, out_channels, ksize1, ksize2)
 
+            self.weight = nn.Parameter(weight)
+            self.ksize1 = weight.shape[-2]
+            self.ksize2 = weight.shape[-1]
     # Complex multiplication (original)
-    def compl_mul2d(self, input, weights):
+    def compl_mul2d(self, input, weight):
         # (batch, in_channel, x,y ), (in_channel, out_channel, x,y) -> (batch, out_channel, x,y)
-        return torch.einsum("bixy,ioxy->boxy", input, weights)
+        return torch.einsum("bixy,ioxy->boxy", input, weight)
 
     def forward(self, x):
         batchsize = x.shape[0]
@@ -165,15 +179,15 @@ class SpectralConv2d(nn.Module):
 
         if self.parametrization=='spectral':
             kernel_shape = np.array([self.modes1*2 + 1, self.modes2*2+1])
-            multiplier_padded = symmetric_padding(self.weights, kernel_shape, im_shape_new + (1 - im_shape_new%2)) #odd dimensions
+            multiplier_padded = symmetric_padding(self.weight, kernel_shape, im_shape_new + (1 - im_shape_new%2)) #odd dimensions
         elif self.parametrization=='spatial':
-            multiplier = self.convert(im_shape_old)
+            multiplier = spatial_to_spectral(self.weight, im_shape_old, norm=self.norm)
             # spatial zero-padding to match image shape, then ifftshift to align center, then rfft2 and rfftshift to get multiplier, maybe this can be optimized by using the 's' parameter for rfft2
             multiplier_padded = symmetric_padding(multiplier, im_shape_old, im_shape_new + (1 - im_shape_new%2)) #odd dimensions
         
         #convolution is implemented by elementwise multiplication of rfft-coefficients (only for odd dimensions, for even dimensions we interpolate to the next higher odd dimension)
         #this could be optimized by checking dimensions first
-        x_ft_padded = symmetric_padding(rfftshift(fft.rfft2(x)), x_shape, im_shape_new + (1 - im_shape_new%2)) #odd dimensions
+        x_ft_padded = symmetric_padding(rfftshift(fft.rfft2(x, norm = self.norm)), x_shape, im_shape_new + (1 - im_shape_new%2)) #odd dimensions
         
 
         # Return to physical space after correcting dimension if desired dimension is even
@@ -181,29 +195,47 @@ class SpectralConv2d(nn.Module):
                                                          im_shape_new + (1 - im_shape_new%2), im_shape_new)),\
                                                          norm = self.norm,\
                                                          s=tuple(im_shape_new))
+        if sum(self.stride) > 1:
+            output = output[...,0::self.stride[0], 0::self.stride[1]]
         return output
     
-    def convert(self, im_shape):
-        if self.parametrization == 'spatial':
-            kernel_shape = np.array([self.ksize1, self.ksize2])
-            shape_diff = im_shape - kernel_shape
-            pad = np.sign(shape_diff) * np.abs(shape_diff)//2
-            odd_bias = np.abs(shape_diff)%2
-            oddity_old = kernel_shape%2
-            pad_list = [pad[-1] + odd_bias[-1] * oddity_old[-1],\
-            pad[-1] + odd_bias[-1] * (1-oddity_old[-1]),\
-            pad[-2] + odd_bias[-2] * oddity_old[-2],\
-            pad[-2] + odd_bias[-2] * (1-oddity_old[-2])] # starting from the last dimension and moving forward, (padding_left,padding_right, padding_top,padding_bottom)'
-        
-            return rfftshift(fft.rfft2(fft.ifftshift(tf.pad(self.weights, pad_list), dim = [-2,-1]), norm = self.norm))
-        else:
-            kernel_shape = np.array([self.modes1*2 + 1, self.modes2*2+1])
-            multiplier_padded = symmetric_padding(self.weights, kernel_shape, im_shape) #odd dimensions
+def spatial_to_spectral(weight, im_shape, norm='forward'):
+    kernel_shape = np.array([weight.shape[-2], weight.shape[-1]])
+    shape_diff = im_shape - kernel_shape
+    pad = np.sign(shape_diff) * np.abs(shape_diff)//2
+    odd_bias = np.abs(shape_diff)%2
+    oddity_old = kernel_shape%2
+    pad_list = [pad[-1] + odd_bias[-1] * oddity_old[-1],\
+    pad[-1] + odd_bias[-1] * (1-oddity_old[-1]),\
+    pad[-2] + odd_bias[-2] * oddity_old[-2],\
+    pad[-2] + odd_bias[-2] * (1-oddity_old[-2])] # starting from the last dimension and moving forward, (padding_left,padding_right, padding_top,padding_bottom)'
+    
+    return rfftshift(fft.rfft2(fft.ifftshift(tf.pad(weight, pad_list), dim = [-2,-1]), norm = norm))
 
-            return fft.fftshift(\
-                       fft.irfft2(\
-                           irfftshift(multiplier_padded),\
-                           s=im_shape, norm=self.norm
-                           ),\
-                        dim = [-2,-1]\
-                        )
+def spectral_to_spatial(weight, im_shape, norm = 'forward'):
+        modes2 = weight.shape[-1] - 1
+        kernel_shape = np.array([weight.shape[-2], modes2*2+1])
+        multiplier_padded = symmetric_padding(weight, kernel_shape, im_shape) #odd dimensions
+
+        return fft.fftshift(\
+                   fft.irfft2(\
+                       irfftshift(multiplier_padded),\
+                       s=im_shape, norm = norm
+                       ),\
+                    dim = [-2,-1]\
+                    )
+  
+def conv_to_spectral(conv, im_shape, parametrization='spectral', norm='forward'):
+    weight = conv.weight
+    weight = torch.flip(conv.weight, dims = [-2,-1])
+    weight = torch.permute(weight, (1,0,2,3))*np.prod(im_shape) #torch.conv2d performs a cross-correlation, i.e., convolution with flipped weight
+    if parametrization == 'spectral':
+        weight = spatial_to_spectral(weight, im_shape, norm)
+        
+    return SpectralConv2d(conv.in_channels, conv.out_channels,\
+                   parametrization=parametrization,\
+                   weight=weight, stride = conv.stride)
+        
+    
+    
+                
