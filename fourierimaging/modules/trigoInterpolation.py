@@ -98,9 +98,10 @@ class TrigonometricResize_2d:
 class SpectralConv2d(nn.Module):
     def __init__(self, in_channels, out_channels, weight=None,\
                  out_shape=None, in_shape=None, parametrization = 'spectral',\
-                 modes1=None, modes2=None,\
-                 ksize1=None, ksize2=None,\
-                 stride = 1, norm = 'forward'):
+                 modes1 = None, modes2 = None,\
+                 ksize1 = None, ksize2 = None,\
+                 stride = 1, norm = 'forward',\
+                ):
         super(SpectralConv2d, self).__init__()
 
         """
@@ -133,6 +134,7 @@ class SpectralConv2d(nn.Module):
                                      modes1*2 + 1, modes2+1,\
                                      dtype=torch.cfloat)
                 weight[:,:,0,0].imag = 0.
+                
                 
             self.weight = nn.Parameter(weight) # the 2-D real FFT of a real-valued kernel with an odd number of sampling points
             
