@@ -62,9 +62,7 @@ x = torch.rand(size=[1,1,28,28])
 mx = model(x)
 msx = model_spatial(x)
 
-show_img(mx)
-plt.figure()
-show_img(msx)
+print(torch.max(mx-msx))
 
 
 #%%
@@ -81,10 +79,10 @@ def main():
                                    out_shape=out_shape,
                                    ksize1=28, ksize2=28)
     model_spatial.weights.data = model.convert([28, 28])
-    for i, (x,y) in enumerate(train_loader):
-        xx=model(x)
-        xxx = model_spatial(x)
-        print(torch.max(xx-xxx).item())
+    # for i, (x,y) in enumerate(train_loader):
+    #     xx=model(x)
+    #     xxx = model_spatial(x)
+    #     print(torch.max(xx-xxx).item())
         
 if __name__=='__main__':
     main()
