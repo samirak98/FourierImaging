@@ -183,7 +183,9 @@ class SpectralConv2d(nn.Module):
         elif self.parametrization=='spatial':
             multiplier = spatial_to_spectral(self.weight, im_shape_old, norm=self.norm)
             # spatial zero-padding to match image shape, then ifftshift to align center, then rfft2 and rfftshift to get multiplier, maybe this can be optimized by using the 's' parameter for rfft2
-            multiplier_padded = symmetric_padding(multiplier, im_shape_old, im_shape_new + (1 - im_shape_new%2)) #odd dimensions
+            multiplier_padded = symmetric_padding(multiplier,\
+                                                  im_shape_old + (1 - im_shape_old%2),\
+                                                  im_shape_new + (1 - im_shape_new%2)) #odd dimensions
         
         #convolution is implemented by elementwise multiplication of rfft-coefficients (only for odd dimensions, for even dimensions we interpolate to the next higher odd dimension)
         #this could be optimized by checking dimensions first
