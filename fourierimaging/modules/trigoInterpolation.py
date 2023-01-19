@@ -210,7 +210,9 @@ def spatial_to_spectral(weight, im_shape, norm='forward'):
     pad[-2] + odd_bias[-2] * oddity_old[-2],\
     pad[-2] + odd_bias[-2] * (1-oddity_old[-2])] # starting from the last dimension and moving forward, (padding_left,padding_right, padding_top,padding_bottom)'
     
-    return rfftshift(fft.rfft2(fft.ifftshift(tf.pad(weight, pad_list), dim = [-2,-1]), norm = norm))
+    w = rfftshift(fft.rfft2(fft.ifftshift(tf.pad(weight, pad_list), dim = [-2,-1]), norm = norm))
+    out_shape = im_shape + (1 - im_shape%2)
+    return symmetric_padding(w, im_shape, out_shape)
 
 def spectral_to_spatial(weight, im_shape, norm = 'forward'):
         modes2 = weight.shape[-1] - 1
@@ -226,6 +228,7 @@ def spectral_to_spatial(weight, im_shape, norm = 'forward'):
                     )
   
 def conv_to_spectral(conv, im_shape, parametrization='spectral', norm='forward'):
+    im_shape = np.array(im_shape)
     weight = conv.weight
     weight = torch.flip(conv.weight, dims = [-2,-1])
     weight = torch.permute(weight, (1,0,2,3))*np.prod(im_shape) #torch.conv2d performs a cross-correlation, i.e., convolution with flipped weight

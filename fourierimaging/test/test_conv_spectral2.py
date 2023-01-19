@@ -21,17 +21,26 @@ import numpy as np
 #%%
 in_channels = 3
 out_channels = 7
-im_shape = [17,19]
+im_shape = [28,28]
+im_shape_test = [29,28]
 
 conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels,\
                  kernel_size=1, padding=0, padding_mode='circular' ,bias=False)
 sp_conv = conv_to_spectral(conv, im_shape, parametrization='spectral')
-spp_conv = conv_to_spectral(conv, im_shape, parametrization='spatial')
+spp_conv = conv_to_spectral(conv, im_shape_test, parametrization='spatial')
 #%%
-x = torch.rand(size=(1,in_channels,im_shape[0], im_shape[1]))
-cx = conv(x)
-scx = sp_conv(x)
-sccx = spp_conv(x)
+max_err = 0.
 
-print(torch.max(scx-cx).item())
-print(torch.max(scx-sccx).item())
+for i in range(10):
+    x = torch.rand(size=(1,in_channels,im_shape[0], im_shape[1]))
+    cx = conv(x)
+    scx = sp_conv(x)
+    sccx = spp_conv(x)
+
+    max_err = max(max_err, torch.max(scx-cx).item())
+    max_err = max(max_err, torch.max(scx-sccx).item())
+
+if max_err < 1e-4:
+    print('The test passed with maximal error: ' + str(max_err))
+else:
+    print('The error seems to high, max error: ' +str(max_err))
