@@ -97,10 +97,10 @@ class TrigonometricResize_2d:
 # - additional parameter 'out_shape' = [int, int]: determines height and width of output. If not chosen, output shape will be the same as input shape
 class SpectralConv2d(nn.Module):
     def __init__(self, in_channels, out_channels, weight=None,\
-                 out_shape=None, in_shape=None, parametrization = 'spectral',\
-                 modes1 = None, modes2 = None,\
-                 ksize1 = None, ksize2 = None,\
-                 stride = 1, norm = 'forward',\
+                  out_shape=None, in_shape=None, parametrization = 'spectral',\
+                  modes1 = None, modes2 = None,\
+                  ksize1 = None, ksize2 = None,\
+                  stride = 1, norm = 'forward',\
                 ):
         super(SpectralConv2d, self).__init__()
 
@@ -131,8 +131,8 @@ class SpectralConv2d(nn.Module):
                           +str(modes2))
                         
                 weight = torch.rand(in_channels, out_channels,\
-                                     modes1*2 + 1, modes2+1,\
-                                     dtype=torch.cfloat)
+                                      modes1*2 + 1, modes2+1,\
+                                      dtype=torch.cfloat)
                 weight[:,:,0,0].imag = 0.
                 
                 
@@ -194,9 +194,9 @@ class SpectralConv2d(nn.Module):
 
         # Return to physical space after correcting dimension if desired dimension is even
         output = fft.irfft2(irfftshift(symmetric_padding(self.compl_mul2d(x_ft_padded, multiplier_padded),\
-                                                         im_shape_new + (1 - im_shape_new%2), im_shape_new)),\
-                                                         norm = self.norm,\
-                                                         s=tuple(im_shape_new))
+                                                          im_shape_new + (1 - im_shape_new%2), im_shape_new)),\
+                                                          norm = self.norm,\
+                                                          s=tuple(im_shape_new))
         if sum(self.stride) > 1:
             output = output[...,0::self.stride[0], 0::self.stride[1]]
         return output
@@ -222,10 +222,10 @@ def spectral_to_spatial(weight, im_shape, norm = 'forward'):
         multiplier_padded = symmetric_padding(weight, kernel_shape, im_shape) #odd dimensions
 
         return fft.fftshift(\
-                   fft.irfft2(\
-                       irfftshift(multiplier_padded),\
-                       s=im_shape, norm = norm
-                       ),\
+                    fft.irfft2(\
+                        irfftshift(multiplier_padded),\
+                        s=im_shape, norm = norm
+                        ),\
                     dim = [-2,-1]\
                     )
   
@@ -238,9 +238,6 @@ def conv_to_spectral(conv, im_shape, parametrization='spectral', norm='forward')
         weight = spatial_to_spectral(weight, im_shape, norm)
         
     return SpectralConv2d(conv.in_channels, conv.out_channels,\
-                   parametrization=parametrization,\
-                   weight=weight, stride = conv.stride)
+                    parametrization=parametrization,\
+                    weight=weight, stride = conv.stride)
         
-    
-    
-                

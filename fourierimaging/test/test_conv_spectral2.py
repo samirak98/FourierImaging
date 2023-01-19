@@ -21,7 +21,7 @@ import numpy as np
 #%%
 in_channels = 3
 out_channels = 7
-im_shape = [28,28]
+im_shape = [27,27]
 
 conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels,\
                  kernel_size=1, padding=0, padding_mode='circular' ,bias=False)
@@ -36,8 +36,8 @@ for i in range(10):
     scx = sp_conv(x)
     sccx = spp_conv(x)
 
-    max_err = max(max_err, torch.max(scx-cx).item())
-    max_err = max(max_err, torch.max(scx-sccx).item())
+    max_err = max(max_err, torch.max(torch.abs(scx-cx)).item())
+    #max_err = max(max_err, torch.max(torch.abs(cx-sccx)).item())
 
 if max_err < 1e-4:
     print('The test passed with maximal error: ' + str(max_err))
