@@ -42,8 +42,19 @@ path = '../saved_models/simple_cnn-circular'
 model.load_state_dict(torch.load(path, map_location=device)['model_state_dict'])
 
 #%%
-spectral_model = SpectralCNN(model)
+spectral_model = SpectralCNN(model).to(device)
 
 x = torch.rand(128,1,28,28).to(device)
+n = torch.linalg.norm
 
-model(x)- spectral_model(x)
+l = model.layers1(x)
+ls = spectral_model.layers1(x)
+
+l = model.layers2(l)
+ls = spectral_model.layers2(ls)
+
+print(n(l-ls))
+print(l.shape)
+
+# z = torch.linalg.norm(model(x) - spectral_model(x)).item()
+# print(z)

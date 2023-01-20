@@ -39,8 +39,8 @@ class CNN(nn.Module):
         self.std = std
         self.act_fun = act_fun
 
-        self.layers1 = BasicBlock(1,  64, kernel=5, stride=2, padding=3, padding_mode='circular')
-        self.layers2 = BasicBlock(64, 64, kernel=5, stride=2, padding=3, padding_mode='circular')
+        self.layers1 = BasicBlock(1,  64, kernel=5, stride=2, padding=2, padding_mode='circular')
+        self.layers2 = BasicBlock(64, 64, kernel=5, stride=2, padding=2, padding_mode='circular')
 
         self.avgpool = nn.AdaptiveAvgPool2d((4,4))
 
@@ -59,18 +59,17 @@ class CNN(nn.Module):
         return x
 
 class SpectralCNN(nn.Module):
-    def __init__(self, CNN, mean = 0.0, std = 1.0, act_fun=nn.ReLU()):
+    def __init__(self, CNN):
         super(SpectralCNN, self).__init__()
-        self.mean = mean
-        self.std = std
-        self.act_fun = act_fun
+        self.mean = CNN.mean
+        self.std = CNN.std
+        self.act_fun = CNN.act_fun
 
         self.layers1 = SpectralBlock(CNN.layers1.conv, [28,28])
-        self.layers2 = SpectralBlock(CNN.layers1.conv, [15,15])
-        self.avgpool = nn.AdaptiveAvgPool2d((4,4))
+        self.layers2 = SpectralBlock(CNN.layers2.conv, [14,14])
+        self.avgpool = CNN.avgpool # nn.AdaptiveAvgPool2d((4,4))
 
-        fc = [torch.nn.Linear(4 * 4 * 64, 128), self.act_fun, torch.nn.Linear(128, 10)]
-        self.fc = nn.Sequential(*fc)
+        self.fc = CNN.fc
 
     def forward(self, x):
         x = (x - self.mean)/self.std
