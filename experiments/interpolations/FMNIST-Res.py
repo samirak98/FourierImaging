@@ -35,8 +35,8 @@ else:
     device = "cpu"
 conf['train']['device'] = device
 model = load_model(conf).to(device)
-path = '../saved_models/simple_cnn-FMNIST'
-model.load_state_dict(torch.load(path, map_location=device))
+path = '../saved_models/simple_cnn-circular'
+model.load_state_dict(torch.load(path, map_location=device)['model_state_dict'])
 
 #%% eval
 data_sizing = ['TRIGO', 'BILINEAR', 'NEAREST', 'BICUBIC']
