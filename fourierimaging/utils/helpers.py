@@ -34,11 +34,10 @@ def load_model(conf):
         model = perceptron(model_conf['sizes'], act_fun = act_fun,\
                            mean=conf['dataset']['mean'], std=conf['dataset']['std'])
     elif model_conf['type'] == 'simple_cnn':
-        if model_conf['spectral']:
-            model = CNN(mean=conf['dataset']['mean'], std=conf['dataset']['std'])
-            model = SpectralCNN(model, fix_out = True)
-        else:
-            model = CNN(mean=conf['dataset']['mean'], std=conf['dataset']['std'])
+        model = CNN(mean=conf['dataset']['mean'], std=conf['dataset']['std'])
+        if model_conf['spectral']['use']:
+            model = SpectralCNN(model, fix_out = True, parametrization=model_conf['spectral']['parametrization'])
+
     elif model_conf['type'] == 'resnet':
         if model_conf['pretrained']:
             model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)

@@ -2,7 +2,9 @@ seed: 42
 model:
   type: simple_cnn
   activation_function: ReLU
-  spectral: True
+  spectral:
+    use: True
+    parametrization: spectral
 dataset:
   name: FashionMNIST
   path: "../../datasets"
