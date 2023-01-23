@@ -98,33 +98,35 @@ class trainer:
                 print('Validation Accuracy: ' + str(100 * val_acc/tot_steps)+'[%]')
             return {'val_loss':val_loss, 'val_acc':val_acc/tot_steps}
 
-def test_step(conf, model, test_loader, attack = None, verbosity = 1):
-    model.eval()
-    
-    test_acc = 0.0
-    test_loss = 0.0
-    tot_steps = 0
-    
-    if attack is None:
-        attack = conf.attack
-    # -------------------------------------------------------------------------
-    # loop over all batches
-    for batch_idx, (x, y) in enumerate(test_loader):
-        # get batch data
-        x, y = x.to(conf.device), y.to(conf.device)
-        
-         # evaluate model on batch
-        logits = model(x)
-        
-        # Get classification loss
-        loss = conf.loss(logits, y)
-        
-        test_acc += (logits.max(1)[1] == y).sum().item()
-        test_loss += loss.item()
-        tot_steps += y.shape[0]
-        
-    # print accuracy
-    if verbosity > 0: 
-        print(50*"-")
-        print('Test Accuracy:', test_acc/tot_steps)
-    return {'test_loss':test_loss, 'test_acc':test_acc/tot_steps}
+class Tester:
+    def __init__(self, test_loader, conf):
+        self.test_loader = test_loader
+        self.loss = select_loss(conf['loss'])
+        self.device = conf['device']
+        self.verbosity = conf['verbosity']
+
+    def __call__(self, model):
+        model.eval()
+        test_acc = 0.0
+        test_loss = 0.0
+        tot_steps = 0
+        # loop over all batches
+        for batch_idx, (x, y) in enumerate(self.test_loader):
+            # get batch data
+            x, y = x.to(self.device), y.to(self.device)
+            
+            # evaluate model on batch
+            logits = model(x)
+            
+            # Get classification loss
+            loss = self.loss(logits, y)
+            
+            test_acc += (logits.max(1)[1] == y).sum().item()
+            test_loss += loss.item()
+            tot_steps += y.shape[0]
+            
+        # print accuracy
+        if self.verbosity > 0: 
+            print(50*"-")
+            print('Test Accuracy: ' + str(100*test_acc/tot_steps) + '[%]')
+        return {'test_loss':test_loss, 'test_acc':test_acc/tot_steps}

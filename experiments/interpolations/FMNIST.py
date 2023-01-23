@@ -12,9 +12,11 @@ sys.path.append(os.path.abspath('../../'))
 import fourierimaging as fi
 
 from fourierimaging.utils.helpers import load_model, init_opt, fix_seed
-from fourierimaging.modules import TrigonometricResize_2d
+from fourierimaging.modules import TrigonometricResize_2d, SpectralCNN
 from fourierimaging.utils import datasets as data
 import fourierimaging.train as train
+
+from select_sizing import sizing
 
 #%% Set up variable and data for an example
 experiment_file = '../classification/FMNIST.yaml'
@@ -38,30 +40,17 @@ model = load_model(conf).to(device)
 path = '../saved_models/simple_cnn-circular'
 model.load_state_dict(torch.load(path, map_location=device)['model_state_dict'])
 
+#%%
+spectral=True
+if spectral:
+    model = SpectralCNN(model, fix_out = True).to(device)
+
 #%% eval
 data_sizing = ['TRIGO', 'BILINEAR', 'NEAREST', 'BICUBIC']
-model_sizing = ['TRIGO', 'BILINEAR', 'NEAREST', 'BICUBIC']
-combinations = [(d,m) for d in data_sizing for m in model_sizing]
-
-def select_sampling(name, size):
-    resize = torch.nn.functional.interpolate
-    if name == 'BILINEAR':
-        return lambda x: resize(x, size=size, mode='bilinear', align_corners=False, antialias=True)
-        #return transforms.Resize(size, interpolation=transforms.InterpolationMode.BILINEAR)
-    elif name == 'NEAREST':
-        return transforms.Resize(size, interpolation=transforms.InterpolationMode.NEAREST)
-    elif name == 'BICUBIC':
-        return lambda x: resize(x, size=size, mode='bicubic', align_corners=False, antialias=True)
-        #return transforms.Resize(size, interpolation=transforms.InterpolationMode.BICUBIC)
-    elif name == 'TRILINEAR':
-        return lambda x: resize(x, size=size, mode='trilinear', align_corners=False, antialias=True)
-    elif name == 'TRIGO':
-        return TrigonometricResize_2d(size)
-    else:
-        raise ValueError('Unknown resize method: ' + name)
+model_sizing = ['NONE', 'TRIGO', 'BILINEAR', 'NEAREST', 'BICUBIC']
+combinations = [(d,m) for d in data_sizing for m in model_sizing]        
         
-        
-fname = 'results/FMNIST.csv'
+fname = 'results/FMNIST' + str(spectral * '-spectral') + '.csv'
 size_step = 1
 sizes = np.arange(3,28+1,size_step)
 orig_size = [28,28]
@@ -79,8 +68,8 @@ def main():
         for s in sizes:
             acc = 0
             tot_steps = 0
-            resize_data = select_sampling(d, [s,s])
-            resize_model = select_sampling(m, orig_size)
+            resize_data = sizing(d, [s,s])
+            resize_model = sizing(m, orig_size)
             
             with torch.no_grad():
                 for batch_idx, (x, y) in enumerate(test_loader):

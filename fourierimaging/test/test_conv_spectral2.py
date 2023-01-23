@@ -22,7 +22,7 @@ import numpy as np
 in_channels = 3
 out_channels = 7
 conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels,\
-                 kernel_size=3, padding=1, padding_mode='circular' ,bias=False)
+                 kernel_size=5, padding=1, padding_mode='circular' ,bias=False)
 max_err = 0.
 for i in [27,28]:
     for j in [27, 28]:

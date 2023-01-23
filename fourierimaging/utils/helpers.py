@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torchvision import models
 from ..modules.perceptron import perceptron
-from ..modules.simple_cnn import CNN
+from ..modules.simple_cnn import CNN, SpectralCNN
 from ..modules.resnet import resnet18
 import random
 import numpy as np
@@ -34,7 +34,11 @@ def load_model(conf):
         model = perceptron(model_conf['sizes'], act_fun = act_fun,\
                            mean=conf['dataset']['mean'], std=conf['dataset']['std'])
     elif model_conf['type'] == 'simple_cnn':
-        model = CNN(mean=conf['dataset']['mean'], std=conf['dataset']['std'])
+        if model_conf['spectral']:
+            model = CNN(mean=conf['dataset']['mean'], std=conf['dataset']['std'])
+            model = SpectralCNN(model, fix_out = True)
+        else:
+            model = CNN(mean=conf['dataset']['mean'], std=conf['dataset']['std'])
     elif model_conf['type'] == 'resnet':
         if model_conf['pretrained']:
             model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
