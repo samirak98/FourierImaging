@@ -37,7 +37,6 @@ for i in [27,28]:
             scx = sp_conv(x)
             sccx = spp_conv(x)
 
-
             sc_err  = torch.max(scx-cx).item()
             scc_err = torch.max(sccx-cx).item()
 
