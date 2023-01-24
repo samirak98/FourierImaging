@@ -83,6 +83,7 @@ class CNN(nn.Module):
 class SpectralCNN(nn.Module):
     def __init__(self, mean = 0., std=1., act_fun = nn.ReLU(),\
                  fix_in = False, fix_out = False,\
+                 ksize1 = 5, ksize2 = 5,\
                  parametrization='spectral'):
         super(SpectralCNN, self).__init__()
         self.mean = mean
@@ -91,7 +92,7 @@ class SpectralCNN(nn.Module):
 
         self.layers1 = SpectralBlock([28,28],\
                                     in_channels=1, out_channels=64,\
-                                    ksize1 = 5, ksize2 = 5,\
+                                    ksize1 = ksize1, ksize2 = ksize2,\
                                     stride=(2,2),\
                                     in_shape=self.select_shape([28, 28], fix_in),\
                                     out_shape=self.select_shape([28, 28], fix_out),\

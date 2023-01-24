@@ -99,7 +99,7 @@ class SpectralConv2d(nn.Module):
     def __init__(self, in_channels, out_channels, weight=None,\
                  out_shape=None, in_shape=None, parametrization = 'spectral',\
                  ksize1 = 1, ksize2 = 1,\
-                 stride = 1, norm = 'forward',\
+                 stride = (1,1), norm = 'forward',\
                  odd = True
                 ):
         super(SpectralConv2d, self).__init__()
@@ -156,28 +156,34 @@ class SpectralConv2d(nn.Module):
 
         if self.parametrization=='spectral':
             kernel_shape = np.array([self.ksize1, self.ksize2])
-            multiplier_padded = symmetric_padding(self.weight, kernel_shape, im_shape_new) 
+            multiplier_padded = symmetric_padding(self.weight, kernel_shape, im_shape_new + (1-im_shape_new%2)) 
         elif self.parametrization=='spatial':
             multiplier = spatial_to_spectral(self.weight, im_shape_old, norm=self.norm)
             # spatial zero-padding to match image shape, then ifftshift to align center, then rfft2 and rfftshift to get multiplier, maybe this can be optimized by using the 's' parameter for rfft2
             multiplier_padded = symmetric_padding(multiplier,\
                                                   im_shape_old,\
-                                                  im_shape_new)
+                                                  im_shape_new + (1-im_shape_new%2))
         #convolution is implemented by elementwise multiplication of rfft-coefficients (only for odd dimensions, for even dimensions we interpolate to the next higher odd dimension)
         #this could be optimized by checking dimensions first
-        x_ft_padded = symmetric_padding(rfftshift(fft.rfft2(x, norm = self.norm)), x_shape, im_shape_new)
+        x_ft_padded = symmetric_padding(rfftshift(fft.rfft2(x, norm = self.norm)), x_shape, im_shape_new + (1-im_shape_new%2))
 
         # Return to physical space after correcting dimension if desired dimension is even
-        output = fft.irfft2(irfftshift(self.compl_mul2d(x_ft_padded, multiplier_padded),\
-                                      ), 
-                            norm = self.norm,\
-                            s=tuple(im_shape_new))
+        output = fft.irfft2(
+                    irfftshift(
+                        symmetric_padding(
+                            self.compl_mul2d(x_ft_padded, multiplier_padded),\
+                            im_shape_new + (1-im_shape_new%2), im_shape_new
+                        )
+                    ), 
+                    norm = self.norm,\
+                    s=tuple(im_shape_new)
+                )
         if sum(self.stride) > 1:
             output = output[...,0::self.stride[0], 0::self.stride[1]]
         return output
 
 
-def spatial_to_spectral(weight, im_shape, norm='forward'):
+def spatial_to_spectral(weight, im_shape, norm='forward', use_cnn=False):
     kernel_shape = np.array([weight.shape[-2], weight.shape[-1]])
     shape_diff = im_shape - kernel_shape 
     pad = np.sign(shape_diff) * np.abs(shape_diff)//2 
@@ -188,7 +194,13 @@ def spatial_to_spectral(weight, im_shape, norm='forward'):
     pad[-2] + odd_bias[-2] * oddity_old[-2],\
     pad[-2] + odd_bias[-2] * (1-oddity_old[-2])] # starting from the last dimension and moving forward, (padding_left,padding_right, padding_top,padding_bottom)'
     
-    return rfftshift(fft.rfft2(fft.ifftshift(tf.pad(weight, pad_list), dim = [-2,-1]), norm = norm))
+    spatial_weight = rfftshift(fft.rfft2(fft.ifftshift(tf.pad(weight, pad_list), dim = [-2,-1]), norm = norm))
+    if use_cnn:
+        if im_shape[-2]%2 == 0:
+            spatial_weight[...,0,:] *=2
+        if im_shape[-1]%2 == 0:
+            spatial_weight[...,:,0] *=2
+    return spatial_weight
 
 def spectral_to_spatial(weight, im_shape, odd = True, norm = 'forward'):
         ksize2 = weight.shape[-1]*2 - (2 - odd) #odd = True: n*2 - 1; odd = False: n*2 - 2 
@@ -198,7 +210,7 @@ def spectral_to_spatial(weight, im_shape, odd = True, norm = 'forward'):
 
         return fft.fftshift(\
                     fft.irfft2(irfftshift(multiplier_padded),\
-                              s=im_shape, norm = norm),\
+                              s=tuple(im_shape), norm = norm),\
                     dim = [-2,-1])
   
 def conv_to_spectral(conv, im_shape, parametrization='spectral', norm='forward',\
@@ -207,15 +219,18 @@ def conv_to_spectral(conv, im_shape, parametrization='spectral', norm='forward',
     weight = conv.weight
     weight = torch.flip(conv.weight, dims = [-2,-1])
     weight = torch.permute(weight, (1,0,2,3))*np.prod(im_shape) #torch.conv2d performs a cross-correlation, i.e., convolution with flipped weight
-    
-    if parametrization == 'spectral':
-        weight = spatial_to_spectral(weight, im_shape, norm)
+    weight = spatial_to_spectral(weight, im_shape, norm=norm, use_cnn=True)
+
     odd = ((im_shape[-1]%2) == 1)
 
+    if parametrization == 'spatial':
+        weight = spectral_to_spatial(weight, im_shape, odd=odd, norm=norm)
+    
     return SpectralConv2d(conv.in_channels, conv.out_channels,\
-                   parametrization=parametrization,\
-                   weight=weight, stride = conv.stride, odd = odd,\
-                   in_shape = in_shape, out_shape = out_shape)
+                parametrization=parametrization,\
+                weight=weight, stride = conv.stride, odd = odd,\
+                in_shape = in_shape, out_shape = out_shape
+                )
         
     
     

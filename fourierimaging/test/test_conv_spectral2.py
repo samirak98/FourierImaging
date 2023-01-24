@@ -22,7 +22,7 @@ import numpy as np
 in_channels = 3
 out_channels = 7
 conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels,\
-                 kernel_size=5, padding=1, padding_mode='circular' ,bias=False)
+                 kernel_size=5, padding=2, padding_mode='circular' ,bias=False)
 max_err = 0.
 for i in [27,28]:
     for j in [27, 28]:
@@ -37,13 +37,40 @@ for i in [27,28]:
             scx = sp_conv(x)
             sccx = spp_conv(x)
 
-            sc_err  = torch.max(scx-cx).item()
-            scc_err = torch.max(sccx-cx).item()
+            sc_err  = torch.max(torch.abs(scx-cx)).item()
+            scc_err = torch.max(torch.abs(sccx-cx)).item()
+            #scc_err = 0.
 
         if max(sc_err, scc_err) > 1e-6:
-            print('The error seems to high')
+            print('The error seems too high')
             print('Spectral Error: ' + str(sc_err))
             print('Spatial Error: '   + str(scc_err))
+            print(' at (i,j): ' + str((i,j)))
+        else:
+            print('Cool :)')
+
+
+#%%
+print(50*'.')
+print('Running Test 2')
+
+
+for i in [27,28]:
+    for j in [27, 28]:
+        im_shape = [i,j]
+        print(im_shape)
+        sp_conv = conv_to_spectral(conv, im_shape, parametrization='spectral')
+        odd = ((im_shape[-1]%2) == 1)
+        w = spectral_to_spatial(sp_conv.weight, im_shape, odd=odd)
+
+        spp_conv = SpectralConv2d(in_channels, out_channels, w, parametrization='spatial', odd=odd)
+        x = torch.rand(size=(1,in_channels,im_shape[0], im_shape[1]))
+        scx = sp_conv(x)
+        sccx = spp_conv(x)
+        err = torch.max(torch.abs(sccx-scx)).item()
+        if err > 1e-6:
+            print('The error seems too high')
+            print('Spectral Error: ' + str(err))
             print(' at (i,j): ' + str((i,j)))
         else:
             print('Cool :)')
