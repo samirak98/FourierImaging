@@ -28,8 +28,6 @@ def load_model(conf):
             raise Warning('Unknown activation function: ' + model_conf['activation_function'] +\
                             ' specified, using ReLU instead.')
             act_fun = nn.ReLU
-                
-    
     if model_conf['type'] == 'perceptron':
         model = perceptron(model_conf['sizes'], act_fun = act_fun,\
                            mean=conf['dataset']['mean'], std=conf['dataset']['std'])
@@ -39,7 +37,8 @@ def load_model(conf):
             if model_conf['spectral']['cnn-init']:
                 model = SpectralCNN.from_CNN(model, fix_out = True, parametrization=model_conf['spectral']['parametrization'])
             else:
-                model = SpectralCNN(fix_out = True, parametrization=model_conf['spectral']['parametrization'])
+                model = SpectralCNN(mean=conf['dataset']['mean'], std=conf['dataset']['std'],\
+                                    fix_out = True, parametrization=model_conf['spectral']['parametrization'])
 
     elif model_conf['type'] == 'resnet':
         if model_conf['pretrained']:

@@ -6,6 +6,7 @@ model:
     use: True
     parametrization: spectral
     cnn-init: False
+    ksize: 28
 dataset:
   name: FashionMNIST
   path: "../../datasets"
