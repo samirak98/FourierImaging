@@ -19,17 +19,31 @@ class BasicBlock(nn.Module):
         return x
 
 class SpectralBlock(nn.Module):
-    def __init__(self, conv, im_shape, in_shape=None, out_shape=None, parametrization='spectral'):
+    def __init__(self, im_shape,\
+                 in_channels=1, out_channels=1,\
+                 in_shape=None, out_shape=None,\
+                 parametrization='spectral',\
+                 ksize1 = 1, ksize2 = 1,
+                 stride = 1, norm = 'forward',\
+                 odd = True):
         super(SpectralBlock, self).__init__()
-        self.conv = 
+        self.conv = SpectralConv2d(in_channels, out_channels,
+                        out_shape=out_shape, in_shape=in_shape,\
+                        parametrization = parametrization,\
+                        ksize1 = ksize1, ksize2 = ksize2,\
+                        stride = stride, norm = norm,\
+                        odd = odd)
 
         self.relu = nn.ReLU(inplace=True)
 
     @classmethod
-    def from_conv(cls, im_shape, in_shape=None, out_shape=None, parametrization='spectral'):
-        block = cls(im_shape, in_shape=in_shape, out_shape=out_shape, parametrization=parametrization)
+    def from_conv(cls, conv, im_shape,\
+                  in_shape=None, out_shape=None,\
+                  parametrization='spectral',\
+                  norm='forward'):
+        block = cls(im_shape)
         block.conv = conv_to_spectral(conv, im_shape,\
-                                     parametrization=parametrization, norm='forward',\
+                                     parametrization=parametrization, norm=norm,\
                                      in_shape=in_shape, out_shape=out_shape)
         return block
 
@@ -76,10 +90,18 @@ class SpectralCNN(nn.Module):
         self.act_fun = act_fun
 
         self.layers1 = SpectralBlock([28,28],\
+                                    in_channels=1, out_channels=64,\
+                                    ksize1 = 5, ksize2 = 5,\
+                                    stride=(2,2),\
                                     in_shape=self.select_shape([28, 28], fix_in),\
                                     out_shape=self.select_shape([28, 28], fix_out),\
                                     parametrization=parametrization)
-        self.layers2 = SpectralBlock()
+        self.layers2 = SpectralBlock([14,14],\
+                                    in_channels=64, out_channels=64,
+                                    ksize1 = 5, ksize2 = 5,\
+                                    stride=(2,2),\
+                                    in_shape=self.select_shape([14, 14], fix_in),\
+                                    parametrization=parametrization)
         self.avgpool = nn.AdaptiveAvgPool2d((4,4))
 
         fc = [torch.nn.Linear(4 * 4 * 64, 128), self.act_fun, torch.nn.Linear(128, 10)]
@@ -87,15 +109,15 @@ class SpectralCNN(nn.Module):
 
     @classmethod
     def from_CNN(cls, CNN, fix_in = False, fix_out = False, parametrization='spectral'):
-        model = cls(mean=CNN.mean, std = CNN.mean,\
+        model = cls(mean=CNN.mean, std = CNN.std,\
                     act_fun = CNN.act_fun,\
                     fix_in = fix_in, fix_out = fix_out)
         model.layers1 = SpectralBlock.from_conv(CNN.layers1.conv, [28,28],\
-                                    in_shape=self.select_shape([28, 28], fix_in),\
-                                    out_shape=self.select_shape([28, 28], fix_out),\
+                                    in_shape=model.select_shape([28, 28], fix_in),\
+                                    out_shape=model.select_shape([28, 28], fix_out),\
                                     parametrization=parametrization)
         model.layers2 = SpectralBlock.from_conv(CNN.layers2.conv, [14,14],\
-                                    in_shape=self.select_shape([14, 14], fix_in),\
+                                    in_shape=model.select_shape([14, 14], fix_in),\
                                     parametrization=parametrization)
         model.avgpool = CNN.avgpool
         model.fc = CNN.fc

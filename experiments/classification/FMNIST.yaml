@@ -5,6 +5,7 @@ model:
   spectral:
     use: True
     parametrization: spectral
+    cnn-init: False
 dataset:
   name: FashionMNIST
   path: "../../datasets"
