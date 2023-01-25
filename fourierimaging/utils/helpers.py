@@ -39,7 +39,7 @@ def load_model(conf):
             else:
                 model = SpectralCNN(
                             mean=conf['dataset']['mean'], std=conf['dataset']['std'],\
-                            ksize1=model_conf['spectral']['ksize1'], ksize2 = model_conf['spectral']['ksize2'],\
+                            ksize1=model_conf.spectral.ksize[0], ksize2 = model_conf.spectral.ksize[1],\
                             mid_channels=model_conf['spectral']['mid_channels'],\
                             out_channels=model_conf['spectral']['out_channels'],\
                             fix_out = True, parametrization=model_conf['spectral']['parametrization']

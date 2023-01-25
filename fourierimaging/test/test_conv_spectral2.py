@@ -4,7 +4,8 @@ import torch.nn as nn
 from torchvision import transforms
 import yaml
 import matplotlib.pyplot as plt
-
+import matplotlib as mpl
+mpl.use('webagg')
 #%% custom imports
 import sys, os
 sys.path.append(os.path.abspath('../../'))
@@ -54,23 +55,36 @@ for i in [27,28]:
 print(50*'.')
 print('Running Test 2')
 
-
-for i in [27,28]:
-    for j in [27, 28]:
+plt.close('all')
+for i in [5,6]:
+    for j in [5, 6]:
         im_shape = [i,j]
         print(im_shape)
-        sp_conv = conv_to_spectral(conv, im_shape, parametrization='spectral')
+        sp_conv = conv_to_spectral(conv, im_shape, parametrization='spectral', conv_like_cnn=True)
         odd = ((im_shape[-1]%2) == 1)
-        w = spectral_to_spatial(sp_conv.weight, im_shape, odd=odd)
-
-        spp_conv = SpectralConv2d(in_channels, out_channels, w, parametrization='spatial', odd=odd)
+        w = spectral_to_spatial(sp_conv.weight.data, im_shape, odd=odd, conv_like_cnn=False)
+        spp_conv = SpectralConv2d(in_channels, out_channels, w, parametrization='spatial', odd=odd, conv_like_cnn=False)
         x = torch.rand(size=(1,in_channels,im_shape[0], im_shape[1]))
+        cx = conv(x)
         scx = sp_conv(x)
         sccx = spp_conv(x)
-        err = torch.max(torch.abs(sccx-scx)).item()
-        if err > 1e-6:
-            print('The error seems too high')
-            print('Spectral Error: ' + str(err))
+        spec_spat_err = torch.max(torch.abs(sccx-scx)).item()
+        fno_conv_err = torch.max(torch.abs(cx-sccx)).item()
+        plt.figure()
+        plt.imshow(cx.detach().numpy()[0,0])
+        plt.colorbar()
+        plt.figure()
+        plt.imshow(scx.detach().numpy()[0,0])
+        plt.colorbar()
+        plt.figure()
+        plt.imshow(sccx.detach().numpy()[0,0])
+        plt.colorbar()
+        
+        if max(spec_spat_err, fno_conv_err) > 1e-6:
+            #print('The error seems too high')
+            print('Spectral - Spatial: ' + str(spec_spat_err))
+            print('spatialFNO - CONV: ' + str(fno_conv_err))
             print(' at (i,j): ' + str((i,j)))
         else:
             print('Cool :)')
+plt.show()

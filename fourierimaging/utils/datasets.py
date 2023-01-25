@@ -11,49 +11,43 @@ import os
 #%% 
 def load(conf):
     valid = None
-    if conf['name'] == "MNIST":
-        conf['im_shape'] = [1,28,28]
+    if conf.name == "MNIST":
+        conf.im_shape = [1,28,28]
         
         # set mean and std for this dataset
-        conf['mean'] = 0.1307
-        conf['std'] = 0.3081
+        conf.mean = 0.1307
+        conf.std = 0.3081
 
         # load MNIST
         transform = transforms.Compose([transforms.ToTensor()])
-        train = datasets.MNIST(conf['path'], train=True, download=conf['download'], transform=transform)
-        test = datasets.MNIST(conf['path'], train=False, download=conf['download'], transform=transform)
-    elif conf['name'] == "FashionMNIST":
-        conf['im_shape'] = [1,28,28]
-        
-        # set mean and std for this dataset
-        conf['mean'] = 0.5
-        conf['std'] = 0.5
-
+        train = datasets.MNIST(conf.path, train=True, download=conf.download, transform=transform)
+        test = datasets.MNIST(conf.path, train=False, download=conf.download, transform=transform)
+    elif conf.name == "FashionMNIST": 
         # load MNIST
         transform = transforms.Compose([transforms.ToTensor()])
-        train = datasets.FashionMNIST(conf['path'], train=True, download=conf['download'], transform=transform)
-        test = datasets.FashionMNIST(conf['path'], train=False, download=conf['download'], transform=transform)
-    elif conf['name'] == "CIFAR10":
-        conf['im_shape'] = [3,32,32]
+        train = datasets.FashionMNIST(conf.path, train=True, download=conf.download, transform=transform)
+        test = datasets.FashionMNIST(conf.path, train=False, download=conf.download, transform=transform)
+    elif conf.name == "CIFAR10":
+        conf.im_shape = [3,32,32]
         
         # set mean and std for this dataset
-        conf['mean'] = torch.tensor([0.4914, 0.4822, 0.4465]).view(-1,1,1)
-        conf['std'] = torch.tensor([0.2023, 0.1994, 0.2010]).view(-1,1,1)
+        conf.mean = torch.tensor([0.4914, 0.4822, 0.4465]).view(-1,1,1)
+        conf.std = torch.tensor([0.2023, 0.1994, 0.2010]).view(-1,1,1)
 
         # load MNIST
         transform_train = transforms.Compose([transforms.RandomCrop(32, padding=4),
                                               transforms.RandomHorizontalFlip(),
                                               transforms.ToTensor()])
         transform_test = transforms.Compose([transforms.ToTensor()])
-        train = datasets.CIFAR10(conf['path'], train=True, download=conf['download'], transform=transform_train)
-        test = datasets.CIFAR10(conf['path'], train=False, download=conf['download'], transform=transform_test)
-    elif conf['name'] == "STANFORDCARS":
+        train = datasets.CIFAR10(conf.path, train=True, download=conf.download, transform=transform_train)
+        test = datasets.CIFAR10(conf.path, train=False, download=conf.download, transform=transform_test)
+    elif conf.name == "STANFORDCARS":
         im_shape = [3,224,224]
-        conf['im_shape'] = [3,224,224]
+        conf.im_shape = [3,224,224]
         
         # set mean and std for this dataset
-        conf['mean'] = 0.#torch.tensor([0.4914, 0.4822, 0.4465]).view(-1,1,1)
-        conf['std'] = 1.#torch.tensor([0.2023, 0.1994, 0.2010]).view(-1,1,1)
+        conf.mean = 0.#torch.tensor([0.4914, 0.4822, 0.4465]).view(-1,1,1)
+        conf.std = 1.#torch.tensor([0.2023, 0.1994, 0.2010]).view(-1,1,1)
 
         # transforms
         transform_train = transforms.Compose([
@@ -79,13 +73,13 @@ def load(conf):
                 )
         ])
 
-        train = datasets.StanfordCars(conf['path'], split='train', download=conf['download'], transform=transform_train)
-        test = datasets.StanfordCars(conf['path'], split='test', download=conf['download'], transform=transform_test)
-        conf['num_classes'] = len(train.classes)
-    elif conf['name'] == 'CUB200':
-        conf['mean'] = 0.#torch.tensor([0.4914, 0.4822, 0.4465]).view(-1,1,1)
-        conf['std'] = 1.#torch.tensor([0.2023, 0.1994, 0.2010]).view(-1,1,1)
-        im_shape = conf['im_shape']
+        train = datasets.StanfordCars(conf.path, split='train', download=conf.download, transform=transform_train)
+        test = datasets.StanfordCars(conf.path, split='test', download=conf.download, transform=transform_test)
+        conf.num_classes = len(train.classes)
+    elif conf.name == 'CUB200':
+        conf.mean = 0.#torch.tensor([0.4914, 0.4822, 0.4465]).view(-1,1,1)
+        conf.std = 1.#torch.tensor([0.2023, 0.1994, 0.2010]).view(-1,1,1)
+        im_shape = conf.im_shape
         transform = transforms.Compose([
                             #transforms.Resize(tuple(im_shape[-2:])),
                             transforms.ToTensor(),
@@ -96,20 +90,20 @@ def load(conf):
         transform_test = transforms.Compose([
                             transforms.ToTensor(),
                             ])
-        path = conf['path']+'/CUB200'
+        path = conf.path+'/CUB200'
         train = ImageFolder(path+'/train', transform=transform)
         test = ImageFolder(path+'/test', transform=transform)
         valid = ImageFolder(path+'/valid', transform=transform)
-        conf['num_classes'] = len(train.classes)
+        conf.num_classes = len(train.classes)
     else:
-        raise ValueError("Unknown dataset: " + conf['name'])
+        raise ValueError("Unknown dataset: " + conf.name)
    
     tr_loader, v_loader, te_loader = split_loader(train, test,\
                                                   valid = valid,
-                                                  batch_size = conf['batch_size'],\
-                                                  batch_size_test = conf['batch_size_test'],\
-                                                  train_split=conf['train_split'],\
-                                                  num_workers=conf['num_workers'])
+                                                  batch_size = conf.batch_size,\
+                                                  batch_size_test = conf.batch_size_test,\
+                                                  train_split=conf.train_split,\
+                                                  num_workers=conf.num_workers)
         
     return tr_loader, v_loader, te_loader
 #%% Define DataLoaders and split in train, valid, test       

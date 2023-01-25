@@ -100,7 +100,7 @@ class SpectralCNN(nn.Module):
                                     parametrization=parametrization)
         self.layers2 = SpectralBlock([14,14],\
                                     in_channels=mid_channels, out_channels=out_channels,
-                                    ksize1 = ksize1//2, ksize2 = ksize2//2,\
+                                    ksize1 = min(ksize1, 14), ksize2 = min(ksize2, 14),\
                                     stride=(2,2),\
                                     in_shape=self.select_shape([14, 14], fix_in),\
                                     parametrization=parametrization)

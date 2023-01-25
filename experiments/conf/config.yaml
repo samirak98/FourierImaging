@@ -1,0 +1,8 @@
+seed: 42
+CUDA:
+  use_cuda: True
+  cuda_device: 0
+defaults:
+  - dataset/FMNIST
+  - model/spectral
+  - train/Adam

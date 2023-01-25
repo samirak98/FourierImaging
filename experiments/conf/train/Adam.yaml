@@ -1,0 +1,8 @@
+loss: crossentropy
+epochs: 1
+verbosity: 1
+opt:
+  name: Adam
+  lr: 0.001
+  lr_scheduler: Plateau
+save: True

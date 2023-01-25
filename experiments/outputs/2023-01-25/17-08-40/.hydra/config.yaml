@@ -1,0 +1,4 @@
+seed: 42
+CUDA:
+  use_cuda: true
+  cuda_device: 0

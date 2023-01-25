@@ -1,0 +1,10 @@
+name: FashionMNIST
+path: "../../datasets"
+train_split: 0.9
+download: True
+batch_size: 128
+batch_size_test: 1000
+num_workers: 8
+im_shape: [1,28,28]
+mean: 0.5
+std: 0.5
