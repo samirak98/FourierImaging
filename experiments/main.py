@@ -71,7 +71,7 @@ def main():
         time_str = time.strftime("%Y%m%d-%H%M%S")
         save_name = 'saved_models/' + conf['model']['type'] + '-' + time_str
         torch.save({
-                'epoch': conf['train']['epochs'],
+                'conf': conf,
                 'model_state_dict': model.state_dict(),
                 }, save_name)
                 

@@ -6,6 +6,8 @@ model:
     use: True
     parametrization: spectral
     cnn-init: False
+    ksize1: 28
+    ksize2: 28
 dataset:
   name: FashionMNIST
   path: "../../datasets"
@@ -19,7 +21,7 @@ CUDA:
   cuda_device: 0
 train:
   loss: crossentropy
-  epochs: 100
+  epochs: 1
   verbosity: 1
   opt:
     name: Adam
