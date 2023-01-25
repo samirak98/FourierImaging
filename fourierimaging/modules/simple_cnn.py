@@ -83,6 +83,7 @@ class CNN(nn.Module):
 class SpectralCNN(nn.Module):
     def __init__(self, mean = 0., std=1., act_fun = nn.ReLU(),\
                  fix_in = False, fix_out = False,\
+                 mid_channels=32, out_channels=64,\
                  ksize1 = 5, ksize2 = 5,\
                  parametrization='spectral'):
         super(SpectralCNN, self).__init__()
@@ -91,21 +92,21 @@ class SpectralCNN(nn.Module):
         self.act_fun = act_fun
 
         self.layers1 = SpectralBlock([28,28],\
-                                    in_channels=1, out_channels=64,\
+                                    in_channels=1, out_channels=mid_channels,\
                                     ksize1 = ksize1, ksize2 = ksize2,\
                                     stride=(2,2),\
                                     in_shape=self.select_shape([28, 28], fix_in),\
                                     out_shape=self.select_shape([28, 28], fix_out),\
                                     parametrization=parametrization)
         self.layers2 = SpectralBlock([14,14],\
-                                    in_channels=64, out_channels=64,
-                                    ksize1 = 5, ksize2 = 5,\
+                                    in_channels=mid_channels, out_channels=out_channels,
+                                    ksize1 = ksize1//2, ksize2 = ksize2//2,\
                                     stride=(2,2),\
                                     in_shape=self.select_shape([14, 14], fix_in),\
                                     parametrization=parametrization)
         self.avgpool = nn.AdaptiveAvgPool2d((4,4))
 
-        fc = [torch.nn.Linear(4 * 4 * 64, 128), self.act_fun, torch.nn.Linear(128, 10)]
+        fc = [torch.nn.Linear(4 * 4 * out_channels, 128), self.act_fun, torch.nn.Linear(128, 10)]
         self.fc = nn.Sequential(*fc)
 
     @classmethod

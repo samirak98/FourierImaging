@@ -72,6 +72,7 @@ def main():
         save_name = 'saved_models/' + conf['model']['type'] + '-' + time_str
         torch.save({
                 'conf': conf,
+                'history': history,
                 'model_state_dict': model.state_dict(),
                 }, save_name)
                 

@@ -8,6 +8,8 @@ model:
     cnn-init: False
     ksize1: 28
     ksize2: 28
+    mid_channels: 8
+    out_channels: 16
 dataset:
   name: FashionMNIST
   path: "../../datasets"
@@ -21,7 +23,7 @@ CUDA:
   cuda_device: 0
 train:
   loss: crossentropy
-  epochs: 1
+  epochs: 50
   verbosity: 1
   opt:
     name: Adam

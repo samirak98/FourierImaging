@@ -41,17 +41,23 @@ else:
     device = "cpu"
 conf['train']['device'] = device
 model = load_model(conf).to(device)
-path = '../saved_models/simple_cnn-spectral-spectral'
+path = '../saved_models/simple_cnn-spectral-spectral-14-small'
 model.load_state_dict(torch.load(path, map_location=device)['model_state_dict'])
 
 w = model.layers1.conv.weight
-wsp = spectral_to_spatial(w, [28,28])
+wsp = spectral_to_spatial(w, [28,28], odd=False)
 
 wsp = wsp.detach().to('cpu').numpy()
 
-fig, ax = plt.subplots(8,8)
-for i in range(8):
-    for j in range(8):
-        ax[i,j].imshow(np.abs(wsp[0,i*8+j,:,:]))
+n= 2
+
+fig, ax = plt.subplots(n,n)
+for i in range(n):
+    for j in range(n):
+        ax[i,j].imshow(np.abs(wsp[0,i*n+j,:,:]))
+#plt.show()
+
+fig, ax = plt.subplots(1,1)
+ax.imshow(np.abs(wsp[0,0,:,:]))
 plt.show()
 #%%

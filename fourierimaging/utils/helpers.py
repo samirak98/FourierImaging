@@ -37,9 +37,13 @@ def load_model(conf):
             if model_conf['spectral']['cnn-init']:
                 model = SpectralCNN.from_CNN(model, fix_out = True, parametrization=model_conf['spectral']['parametrization'])
             else:
-                model = SpectralCNN(mean=conf['dataset']['mean'], std=conf['dataset']['std'],\
-                                    ksize1=conf['dataset']['ksize1'], ksize2 = conf['dataset']['ksize2'],\
-                                    fix_out = True, parametrization=model_conf['spectral']['parametrization'])
+                model = SpectralCNN(
+                            mean=conf['dataset']['mean'], std=conf['dataset']['std'],\
+                            ksize1=model_conf['spectral']['ksize1'], ksize2 = model_conf['spectral']['ksize2'],\
+                            mid_channels=model_conf['spectral']['mid_channels'],\
+                            out_channels=model_conf['spectral']['out_channels'],\
+                            fix_out = True, parametrization=model_conf['spectral']['parametrization']
+                        )
 
     elif model_conf['type'] == 'resnet':
         if model_conf['pretrained']:
