@@ -1,8 +1,9 @@
 loss: crossentropy
-epochs: 1
+epochs: 100
 verbosity: 1
 opt:
   name: Adam
   lr: 0.001
   lr_scheduler: Plateau
 save: True
+save_dir: saved_models/

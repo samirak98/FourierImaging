@@ -37,16 +37,8 @@ def main(conf: DictConfig) -> None:
         device = "cpu"
     
     with open_dict(conf):
-        conf.train.device = device
-
-        if conf.model.type == 'simple_cnn':
-            time_str = time.strftime("%Y%m%d-%H%M%S")
-            save_name = 'saved_models/' + 'simple_cnn'
-            if conf.model.spectral.use:
-                save_name += '-' +\
-                            conf.model.parametrization +\
-                            '-' + str(conf.model.spectral.ksize[0])+'-'+str(conf.model.spectral.ksize[1])
-            save_name += '-' + time_str
+        print(device)
+        conf.train['device'] = str(device)
     
     model = load_model(conf).to(device)
 
@@ -62,7 +54,7 @@ def main(conf: DictConfig) -> None:
     #%%
     print(50*'#')
     print('Starting training.')
-    print(conf['model'])
+    print(conf.model)
     print('Total number of params: ' + str(total_params) + ' parameters')
     print('Number of trainable params: ' + str(total_trainable_params))
     
@@ -84,10 +76,13 @@ def main(conf: DictConfig) -> None:
             if key in train_data:
                 history[key].append(train_data[key])
 
-    tester = train.Tester(test_loader, conf['train'])
+    tester = train.Tester(test_loader, conf.train)
     tester(model)
 
-    if conf['train']['save']:
+    if conf.train.save:
+        time_str = time.strftime("%Y%m%d-%H%M%S")
+        save_name = conf.train.save_dir 
+        save_name += model.name() + '-' + time_str
         torch.save({
                 'conf': conf,
                 'history': history,

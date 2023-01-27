@@ -1,9 +1,7 @@
 type: simple_cnn
 activation_function: ReLU
 spectral:
-  use: True
-  parametrization: spectral
-  cnninit: False
+  use: False
 ksize: [28,28]
 mid_channels: 8
 out_channels: 16

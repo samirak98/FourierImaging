@@ -54,19 +54,23 @@ class SpectralBlock(nn.Module):
 
 
 class CNN(nn.Module):
-    def __init__(self, mean = 0.0, std = 1.0, act_fun=nn.ReLU()):
+    def __init__(self, mean = 0.0, std = 1.0, act_fun=nn.ReLU(),\
+                 mid_channels=32, out_channels=64,\
+                 ksize1 = 5, ksize2 = 5):
         super(CNN, self).__init__()
         #
         self.mean = mean
         self.std = std
         self.act_fun = act_fun
+        self.ksize1 = ksize1
+        self.ksize2 = ksize2
 
-        self.layers1 = BasicBlock(1,  64, kernel=5, stride=2, padding=2, padding_mode='circular')
-        self.layers2 = BasicBlock(64, 64, kernel=5, stride=2, padding=2, padding_mode='circular')
+        self.layers1 = BasicBlock(1,  mid_channels, kernel=(ksize1,ksize2), stride=2, padding=2, padding_mode='circular')
+        self.layers2 = BasicBlock(mid_channels, out_channels, kernel=(ksize1,ksize2), stride=2, padding=2, padding_mode='circular')
 
         self.avgpool = nn.AdaptiveAvgPool2d((4,4))
 
-        fc = [torch.nn.Linear(4 * 4 * 64, 128), self.act_fun, torch.nn.Linear(128, 10)]
+        fc = [torch.nn.Linear(4 * 4 * out_channels, 128), self.act_fun, torch.nn.Linear(128, 10)]
         self.fc = nn.Sequential(*fc)
 
     def forward(self, x):
@@ -80,6 +84,11 @@ class CNN(nn.Module):
         x = self.fc(x)
         return x
 
+    def name(self):
+        name = 'cnn'
+        name += '-' + str(self.ksize1) + '-' + str(self.ksize2)
+        return name
+
 class SpectralCNN(nn.Module):
     def __init__(self, mean = 0., std=1., act_fun = nn.ReLU(),\
                  fix_in = False, fix_out = False,\
@@ -90,6 +99,9 @@ class SpectralCNN(nn.Module):
         self.mean = mean
         self.std = std
         self.act_fun = act_fun
+        self.ksize1 = ksize1
+        self.ksize2 = ksize2
+        self.parametrization = parametrization
 
         self.layers1 = SpectralBlock([28,28],\
                                     in_channels=1, out_channels=mid_channels,\
@@ -142,3 +154,9 @@ class SpectralCNN(nn.Module):
             return im_shape
         else:
             return None
+
+    def name(self):
+        name = 'spectral-cnn'
+        name += '-' + self.parametrization
+        name += '-' + str(self.ksize1) + '-' + str(self.ksize2)
+        return name
