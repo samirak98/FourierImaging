@@ -1,0 +1,11 @@
+name: CUB200
+path: "../../datasets"
+train_split: 1.0
+download: False
+batch_size: 30
+batch_size_test: 32
+mean: 0.
+std: 1.
+num_workers: 4
+im_shape: [112,112]
+num_classes: 450

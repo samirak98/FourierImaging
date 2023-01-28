@@ -2,8 +2,10 @@ import torch
 import torch.nn as nn
 from torchvision import models
 from ..modules.perceptron import perceptron
-from ..modules.simple_cnn import CNN, SpectralCNN
+from ..modules.cnn import CNN
+from ..modules.spectralcnn import SpectralCNN
 from ..modules.resnet import resnet18
+from ..modules.spectralresnet import spectralresnet18
 import random
 import numpy as np
 #%% set a fixed seed
@@ -38,23 +40,35 @@ def load_model(conf):
                     out_channels=model_conf.out_channels)
         if model_conf.spectral.use:
             if model_conf.spectral.cnninit:
-                model = SpectralCNN.from_CNN(model, fix_out = True, parametrization=model_conf.spectral.parametrization)
+                model = SpectralCNN.from_CNN(
+                            model, fix_out = True,\
+                            parametrization=model_conf.spectral.parametrization,
+                            norm=model_conf.spectral.norm,
+                            conv_like_cnn = model_conf.spectral.conv_like_cnn
+                        )
             else:
                 model = SpectralCNN(
                             mean=conf.dataset.mean, std=conf.dataset.std,\
                             ksize1=model_conf.ksize[0], ksize2 = model_conf.ksize[1],\
                             mid_channels=model_conf.mid_channels,\
                             out_channels=model_conf.out_channels,\
-                            fix_out = True, parametrization=model_conf.spectral.parametrization
+                            fix_in = True,
+                            fix_out = True, 
+                            parametrization=model_conf.spectral.parametrization,
+                            norm=model_conf.spectral.norm,
+                            conv_like_cnn = model_conf.spectral.conv_like_cnn
                         )
 
     elif model_conf.type == 'resnet':
-        if model_conf.pretrained:
-            model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+        if not model_conf.spectral.use:
+            if model_conf.pretrained:
+                model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+            else:
+                model = resnet18(padding_mode=model_conf.padding_mode)
         else:
-            model = resnet18(padding_mode=model_conf.padding_mode)
-        # model = load_resnet(size=model_conf.size,\
-        #                     mean=conf.dataset.mean, std=conf.dataset.std, num_classes=conf.dataset.num_classes)
+            model = spectralresnet18()
+
+
     elif model_conf.type == 'efficentnet':
         model = models.efficientnet_b1(pretrained=model_conf.pretrained, weights=models.EfficientNet_B1_Weights.DEFAULT)
         model.classifier[1] = nn.Linear(in_features=1280, out_features=conf.dataset.num_classes)

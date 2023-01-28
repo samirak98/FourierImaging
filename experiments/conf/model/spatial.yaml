@@ -3,7 +3,9 @@ activation_function: ReLU
 spectral:
   use: True
   parametrization: spatial
-  cnninit: False
+  cnninit: True
+  norm: 'backward'
+  conv_like_cnn: True
 ksize: [28,28]
 mid_channels: 8
 out_channels: 16

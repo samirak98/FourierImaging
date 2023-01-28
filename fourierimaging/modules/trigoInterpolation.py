@@ -100,7 +100,8 @@ class SpectralConv2d(nn.Module):
                  out_shape=None, in_shape=None, parametrization = 'spectral',\
                  ksize1 = 1, ksize2 = 1,\
                  stride = (1,1), norm = 'forward',\
-                 odd = True, conv_like_cnn = False
+                 odd = True, 
+                 conv_like_cnn = False
                 ):
         super(SpectralConv2d, self).__init__()
 
@@ -118,7 +119,7 @@ class SpectralConv2d(nn.Module):
         self.odd = odd
         self.conv_like_cnn = conv_like_cnn
 
-        self.scale = (1 / (in_channels * out_channels))
+        
     
         #Initialize weight according to chosen parametrization
         if parametrization == 'spectral':
@@ -131,8 +132,19 @@ class SpectralConv2d(nn.Module):
             self.ksize1 = weight.shape[-2]
             self.ksize2 = weight.shape[-1]*2 - (2 - self.odd)                 
         elif parametrization == 'spatial':
+            if in_shape is None:
+                im_factor = 1
+            else:
+                #if norm == 'forward':
+                #im_factor = np.prod(in_shape)
+                im_factor=1
+                #else:
+                #    im_factor = 1
+
+            self.scale = 1 / (in_channels * ksize1 * ksize2)
+
             if weight is None:        
-                weight = self.scale*torch.rand(in_channels, out_channels, ksize1, ksize2)
+                weight = im_factor * np.sqrt(self.scale) * 2 * (torch.rand(in_channels, out_channels, ksize1, ksize2) - 0.5)
             self.ksize1 = weight.shape[-2]
             self.ksize2 = weight.shape[-1]
         self.weight = nn.Parameter(weight.clone())
@@ -159,14 +171,19 @@ class SpectralConv2d(nn.Module):
             kernel_shape = np.array([self.ksize1, self.ksize2])
             multiplier_padded = symmetric_padding(self.weight, kernel_shape, im_shape_new + (1-im_shape_new%2)) 
         elif self.parametrization=='spatial':
-            multiplier = spatial_to_spectral(self.weight, im_shape_old, norm=self.norm, conv_like_cnn=self.conv_like_cnn)
+            multiplier = spatial_to_spectral(self.weight, im_shape_old, norm='backward', conv_like_cnn=self.conv_like_cnn)
             # spatial zero-padding to match image shape, then ifftshift to align center, then rfft2 and rfftshift to get multiplier, maybe this can be optimized by using the 's' parameter for rfft2
             multiplier_padded = symmetric_padding(multiplier,\
                                                   im_shape_old,\
                                                   im_shape_new + (1-im_shape_new%2))
         #convolution is implemented by elementwise multiplication of rfft-coefficients (only for odd dimensions, for even dimensions we interpolate to the next higher odd dimension)
         #this could be optimized by checking dimensions first
-        x_ft_padded = symmetric_padding(rfftshift(fft.rfft2(x, norm = self.norm)), x_shape, im_shape_new + (1-im_shape_new%2))
+        x_ft_padded =   symmetric_padding(
+                            rfftshift(
+                                fft.rfft2(x, norm = self.norm)
+                            ), 
+                            x_shape, im_shape_new + (1-im_shape_new%2)
+                        )
 
         # Return to physical space after correcting dimension if desired dimension is even
         output = fft.irfft2(
@@ -196,7 +213,15 @@ def spatial_to_spectral(weight, im_shape, norm='forward', conv_like_cnn=False):
     pad[-2] + odd_bias[-2] * oddity_old[-2],\
     pad[-2] + odd_bias[-2] * (1-oddity_old[-2])] # starting from the last dimension and moving forward, (padding_left,padding_right, padding_top,padding_bottom)'
     
-    spectral_weight = rfftshift(fft.rfft2(fft.ifftshift(tf.pad(weight, pad_list), dim = [-2,-1]), norm = norm))
+    spectral_weight =   rfftshift(
+                            fft.rfft2(
+                                fft.ifftshift(
+                                    tf.pad(weight, pad_list), 
+                                    dim = [-2,-1]
+                                ), 
+                                norm = norm
+                            )
+                        )
     
     # the discrete approximation of continuous convolution in spatial domain differs from the spectral implementation for even dimensions, if conv_like_cnn, we use spatial approach
     if conv_like_cnn:
@@ -221,26 +246,32 @@ def spectral_to_spatial(weight, im_shape, odd = True, norm = 'forward', conv_lik
         multiplier_padded = symmetric_padding(weight, kernel_shape, im_shape) 
 
         return fft.fftshift(\
-                    fft.irfft2(irfftshift(multiplier_padded),\
-                              s=tuple(im_shape), norm = norm),\
-                    dim = [-2,-1])
+                    fft.irfft2(
+                        irfftshift(multiplier_padded),\
+                        s=tuple(im_shape), norm = norm
+                    ),\
+                    dim = [-2,-1]
+                )
   
 def conv_to_spectral(conv, im_shape, parametrization='spectral', norm='forward',\
                      in_shape=None, out_shape=None, conv_like_cnn = True):
     im_shape = np.array(im_shape)
     weight = conv.weight
     weight = torch.flip(conv.weight, dims = [-2,-1])
-    weight = torch.permute(weight, (1,0,2,3))*np.prod(im_shape) #torch.conv2d performs a cross-correlation, i.e., convolution with flipped weight
+    weight = torch.permute(weight, (1,0,2,3))#*np.prod(im_shape) #torch.conv2d performs a cross-correlation, i.e., convolution with flipped weight
     if parametrization=='spectral':
         weight = spatial_to_spectral(weight, im_shape, norm=norm, conv_like_cnn=conv_like_cnn)
 
     odd = ((im_shape[-1]%2) == 1)
     
-    return SpectralConv2d(conv.in_channels, conv.out_channels,\
-                parametrization=parametrization,\
-                weight=weight, stride = conv.stride, odd = odd,\
-                in_shape = in_shape, out_shape = out_shape,\
-                conv_like_cnn = conv_like_cnn)
+    return SpectralConv2d(
+            conv.in_channels, conv.out_channels,\
+            parametrization=parametrization,\
+            weight=weight, stride = conv.stride, odd = odd,\
+            in_shape = in_shape, out_shape = out_shape,\
+            conv_like_cnn = conv_like_cnn,
+            norm=norm
+            )
         
     
     

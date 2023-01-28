@@ -1,0 +1,4 @@
+type: resnet
+size: 18
+spectral:
+  use: True

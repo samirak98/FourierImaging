@@ -22,8 +22,6 @@ import fourierimaging.train as train
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(conf: DictConfig) -> None:
-    print(OmegaConf.to_yaml(conf))
-
     #%% fix random seed
     fix_seed(conf.seed)
 
@@ -37,7 +35,6 @@ def main(conf: DictConfig) -> None:
         device = "cpu"
     
     with open_dict(conf):
-        print(device)
         conf.train['device'] = str(device)
     
     model = load_model(conf).to(device)
@@ -51,10 +48,11 @@ def main(conf: DictConfig) -> None:
     total_params = sum(p.numel() for p in model.parameters())
     total_trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
+    print(OmegaConf.to_yaml(conf))
     #%%
     print(50*'#')
     print('Starting training.')
-    print(conf.model)
+    print('Model name ' + model.name())
     print('Total number of params: ' + str(total_params) + ' parameters')
     print('Number of trainable params: ' + str(total_trainable_params))
     
