@@ -38,7 +38,7 @@ model = load_model(conf).to(device)
 model.load_state_dict(torch.load(path)['model_state_dict'])
 
 #%%
-spectral=False
+spectral=True
 if spectral:
     model = SpectralCNN.from_CNN(model, fix_out = False).to(device)
 
@@ -48,8 +48,8 @@ model_sizing = ['NONE', 'TRIGO', 'BILINEAR']
 combinations = [(d,m) for d in data_sizing for m in model_sizing]        
         
 fname = 'results/FMNIST' + str(spectral * '-spectral') + '-2.csv'
-size_step = 3
-sizes = np.arange(3,50,size_step)
+size_step = 2
+sizes = np.arange(3,60,size_step)
 orig_size = [28,28]
 
 
