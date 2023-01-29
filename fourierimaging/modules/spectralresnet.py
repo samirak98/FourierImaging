@@ -5,8 +5,11 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
+import numpy as np
+
 from torchvision.models._api import Weights, WeightsEnum
-from .trigoInterpolation import SpectralConv2d, conv_to_spectral
+from .trigoInterpolation import SpectralConv2d, conv_to_spectral, TrigonometricResize_2d
+from .resnet import BasicBlock
 
 def conv1x1(in_planes: int, out_planes: int, stride: int = 1, padding_mode='zeros') -> nn.Conv2d:
     """1x1 convolution"""
@@ -17,8 +20,8 @@ class SpectralBlock(nn.Module):
 
     def __init__(
         self,
-        inplanes: int,
-        planes: int,
+        inplanes: int = 1,
+        planes: int = 1,
         stride: int = 1,
         downsample: Optional[nn.Module] = None,
         groups: int = 1,
@@ -65,6 +68,39 @@ class SpectralBlock(nn.Module):
         self.bn2 = norm_layer(planes)
         self.downsample = downsample
         self.stride = stride
+
+    @classmethod
+    def from_resblock(
+                    cls, resblock, im_shape,
+                    in_shape=None, out_shape=None,
+                    parametrization='spectral',
+                    norm='forward',
+                    conv_like_cnn = False
+                    ):
+        block = cls()
+        block.stride = resblock.stride
+        block.bn1 = resblock.bn1
+        block.relu = resblock.relu 
+        block.conv1 = conv_to_spectral(
+                        resblock.conv1, im_shape,
+                        parametrization=parametrization, norm=norm,\
+                        in_shape=in_shape, out_shape=out_shape,
+                        conv_like_cnn = True
+                    )
+        
+        s_shape = [np.ceil(im_shape[0]/block.stride), np.ceil(im_shape[1]/block.stride)]
+        block.conv2 = conv_to_spectral(
+                        resblock.conv2, np.array(s_shape, dtype=int),
+                        parametrization=parametrization, norm=norm,\
+                        in_shape=in_shape, out_shape=out_shape,
+                        conv_like_cnn = True
+                    )
+
+        block.bn2 = resblock.bn2
+        block.downsample = resblock.downsample
+        #print(block.conv1)
+        return block
+
 
     def forward(self, x: Tensor) -> Tensor:
         identity = x
@@ -140,10 +176,13 @@ class SpectralResNet(nn.Module):
         self.bn1 = norm_layer(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(64, layers[0], stride=2)
+        self.layer1 = self._make_layer(64, layers[0], stride=1)
         self.layer2 = self._make_layer(128, layers[1], stride=2)
         self.layer3 = self._make_layer(256, layers[2], stride=2)
         self.layer4 = self._make_layer(512, layers[3], stride=2)
+
+        #self.resize = lambda x: nn.functional.interpolate(x, size=[4,4], mode='bicubic', align_corners=False, antialias=True)
+        #self.resize = TrigonometricResize_2d([4,4])
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(512, num_classes)
 
@@ -165,29 +204,72 @@ class SpectralResNet(nn.Module):
                     nn.init.constant_(m.bn2.weight, 0)  # type: ignore[arg-type]
 
     @classmethod
-    def from_resnet(cls, im_shape, **kwargs):
-        model = cls(**kwargs)
+    def from_resnet(cls, resnet, im_shape,\
+                    fix_in = False,
+                    fix_out= False
+                    ):
+        layers = [
+                len(resnet.layer1), 
+                len(resnet.layer2), 
+                len(resnet.layer3), 
+                len(resnet.layer4)
+                ]
 
-        self.conv1 = conv_to_spectral(
-                            model.conv1, im_shape,\
+        model = cls(layers,
+                    fix_in = False,
+                    fix_out= False
+                    )
+
+        model.conv1 = conv_to_spectral(
+                            resnet.conv1, im_shape,\
                             in_shape=model.select_shape(im_shape, fix_in),\
                             out_shape=model.select_shape(im_shape, fix_out),\
                             parametrization=model.parametrization,
                             norm=model.norm,
-                            conv_like_cnn = model.conv_like_cnn
+                            conv_like_cnn = True
                         )
-        self.layer1 = model._convert_layer(model.layer1, [im_shape[0]//2, im_shape[1]//2])
-        self.layer2 = model._convert_layer(model.layer2, [im_shape[0]//4, im_shape[1]//4])
-        self.layer3 = model._convert_layer(model.layer1, [im_shape[0]//8, im_shape[1]//8])
-        self.layer4 = model._convert_layer(model.layer1, [im_shape[0]//16, im_shape[1]//16])
+        model.bn1 = resnet.bn1
+        model.maxpool = resnet.maxpool
+
+
+
+        current_shape = [im_shape[0]//4, im_shape[1]//4]
+        for i in range(1,5):
+            l_name = 'layer' + str(i)
+            reslayer = getattr(resnet, l_name)
+
+            setattr(model, 
+                    l_name, 
+                    model._convert_layer(
+                        reslayer,
+                        current_shape
+                        )
+                    )
+
+            stride = reslayer[0].stride
+            current_shape = [int(np.ceil(current_shape[0]/stride)), int(np.ceil(current_shape[1]/stride))]
+
+        # model.layer2 = model._convert_layer(resnet.layer2, [im_shape[0]//4, im_shape[1]//4])
+        # model.layer3 = model._convert_layer(resnet.layer3, [im_shape[0]//8, im_shape[1]//8])
+        # model.layer4 = model._convert_layer(resnet.layer4, [im_shape[0]//16, im_shape[1]//16])
+
+        model.avgpool = resnet.avgpool
+        model.fc = resnet.fc
+        return model
 
     def _convert_layer(self, layer, im_shape):
-        for m in layers:
-            l =[]
-            if isinstance(m, nn.Conv2d):
-                print(m)
+        l = []
+        current_shape = im_shape
+        for m in layer:           
+            if isinstance(m, BasicBlock):
+                mm = SpectralBlock.from_resblock(m, current_shape)
+                current_shape = [int(np.ceil(current_shape[0]/m.stride)),  int(np.ceil(current_shape[1]/m.stride))]
+                
+                l.append(mm)
             else:
                 l.append(m)
+
+        return nn.Sequential(*l)
 
     def _make_layer(
         self,
@@ -256,6 +338,8 @@ class SpectralResNet(nn.Module):
         x = self.layer2(x)
         x = self.layer3(x)
         x = self.layer4(x)
+
+        x = self.resize(x)
 
         x = self.avgpool(x)
         x = torch.flatten(x, 1)

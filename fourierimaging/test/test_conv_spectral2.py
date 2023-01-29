@@ -23,7 +23,7 @@ import numpy as np
 in_channels = 3
 out_channels = 7
 conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels,\
-                 kernel_size=5, padding=2, padding_mode='circular' ,bias=False)
+                 kernel_size=3, padding=1, padding_mode='circular' ,bias=False)
 max_err = 0.
 for i in [27,28]:
     for j in [27, 28]:
@@ -63,28 +63,33 @@ for i in [5,6]:
         sp_conv = conv_to_spectral(conv, im_shape, parametrization='spectral', conv_like_cnn=True)
         odd = ((im_shape[-1]%2) == 1)
         w = spectral_to_spatial(sp_conv.weight.data, im_shape, odd=odd, conv_like_cnn=False)
-        spp_conv = SpectralConv2d(in_channels, out_channels, w, parametrization='spatial', odd=odd, conv_like_cnn=False)
+        spp_conv =  SpectralConv2d(in_channels, out_channels, w, parametrization='spatial', odd=odd, conv_like_cnn=False)
         x = torch.rand(size=(1,in_channels,im_shape[0], im_shape[1]))
         cx = conv(x)
         scx = sp_conv(x)
         sccx = spp_conv(x)
         spec_spat_err = torch.max(torch.abs(sccx-scx)).item()
-        fno_conv_err = torch.max(torch.abs(cx-sccx)).item()
-        plt.figure()
-        plt.imshow(cx.detach().numpy()[0,0])
-        plt.colorbar()
-        plt.figure()
-        plt.imshow(scx.detach().numpy()[0,0])
-        plt.colorbar()
-        plt.figure()
-        plt.imshow(sccx.detach().numpy()[0,0])
-        plt.colorbar()
+        spec_conv_err = torch.max(torch.abs(scx-cx)).item()
+        spat_conv_err = torch.max(torch.abs(cx-sccx)).item()
+
+        plotting = False
+        if plotting:
+            plt.figure()
+            plt.imshow(cx.detach().numpy()[0,0])
+            plt.colorbar()
+            plt.figure()
+            plt.imshow(scx.detach().numpy()[0,0])
+            plt.colorbar()
+            plt.figure()
+            plt.imshow(sccx.detach().numpy()[0,0])
+            plt.colorbar()
+            plt.show()
         
-        if max(spec_spat_err, fno_conv_err) > 1e-6:
+        if max(spec_spat_err, spec_conv_err, spat_conv_err) > 1e-6:
             #print('The error seems too high')
             print('Spectral - Spatial: ' + str(spec_spat_err))
-            print('spatialFNO - CONV: ' + str(fno_conv_err))
+            print('spectralFNO - CONV: ' + str(spec_conv_err))
+            print('spatialFNO - CONV: ' + str(spat_conv_err))
             print(' at (i,j): ' + str((i,j)))
         else:
             print('Cool :)')
-plt.show()

@@ -96,17 +96,17 @@ def load(conf):
         with open_dict(conf):
             conf.num_classes = len(train.classes)
             conf.train_split=0.9
-        #test = ImageFolder(path+'/test', transform=transform)
+        test = ImageFolder(path+'/test', transform=transform_test)
         #valid = ImageFolder(path+'/valid', transform=transform)
 
         total_count = len(train)
         train_count = int(0.9*total_count)
         test_count = total_count - train_count
-        train, test = torch.utils.data.random_split(
-                        train,
-                        [train_count, test_count],
-                        generator=torch.Generator().manual_seed(42)
-                    )
+        # train, test = torch.utils.data.random_split(
+        #                 train,
+        #                 [train_count, test_count],
+        #                 generator=torch.Generator().manual_seed(42)
+        #             )
 
 
     else:

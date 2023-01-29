@@ -118,19 +118,31 @@ class SpectralConv2d(nn.Module):
         self.norm = norm
         self.odd = odd
         self.conv_like_cnn = conv_like_cnn
-
+        im_factor = 1
         
     
         #Initialize weight according to chosen parametrization
         if parametrization == 'spectral':
-            if weight is None:              
-                weight = torch.rand(in_channels, out_channels,\
-                                     ksize1, ksize2//2+1,\
-                                     dtype=torch.cfloat)
+            if not in_shape is None:
+                if norm == 'forward':
+                    im_factor = np.prod(im_shape)
+                elif norm == 'ortho':
+                    im_factor = np.sqrt(np.prod(im_shape))
+                
+            if weight is None:   
+                self.scale = 1 / (in_channels * out_channels)
+
+                weight = torch.rand(in_channels, out_channels,
+                                    ksize1, ksize2//2+1,
+                                    dtype=torch.cfloat
+                                    )
+                weight = self.scale * (weight)
+                        
                 self.odd = ksize2%2
                 weight[:,:,0,0].imag = 0.  
             self.ksize1 = weight.shape[-2]
-            self.ksize2 = weight.shape[-1]*2 - (2 - self.odd)                 
+            #self.ksize2 = weight.shape[-1]*2 - (2 - self.odd)  
+            self.ksize2 = 2 * (weight.shape[-1] - 1) + self.odd               
         elif parametrization == 'spatial':
             if in_shape is None:
                 im_factor = 1
@@ -138,8 +150,6 @@ class SpectralConv2d(nn.Module):
                 #if norm == 'forward':
                 #im_factor = np.prod(in_shape)
                 im_factor=1
-                #else:
-                #    im_factor = 1
 
             self.scale = 1 / (in_channels * ksize1 * ksize2)
 
@@ -171,7 +181,7 @@ class SpectralConv2d(nn.Module):
             kernel_shape = np.array([self.ksize1, self.ksize2])
             multiplier_padded = symmetric_padding(self.weight, kernel_shape, im_shape_new + (1-im_shape_new%2)) 
         elif self.parametrization=='spatial':
-            multiplier = spatial_to_spectral(self.weight, im_shape_old, norm='backward', conv_like_cnn=self.conv_like_cnn)
+            multiplier = spatial_to_spectral(self.weight, im_shape_old, norm=self.norm, conv_like_cnn=self.conv_like_cnn)
             # spatial zero-padding to match image shape, then ifftshift to align center, then rfft2 and rfftshift to get multiplier, maybe this can be optimized by using the 's' parameter for rfft2
             multiplier_padded = symmetric_padding(multiplier,\
                                                   im_shape_old,\
@@ -200,6 +210,11 @@ class SpectralConv2d(nn.Module):
             output = output[...,0::self.stride[0], 0::self.stride[1]]
         return output
 
+
+    def extra_repr(self):
+        s = ('{in_channels}, {out_channels}, kernel_size={ksize1}'
+             ', stride={stride}')
+        return s.format(**self.__dict__)
 
 def spatial_to_spectral(weight, im_shape, norm='forward', conv_like_cnn=False):
     weight = weight.clone()
@@ -258,17 +273,22 @@ def conv_to_spectral(conv, im_shape, parametrization='spectral', norm='forward',
     im_shape = np.array(im_shape)
     weight = conv.weight
     weight = torch.flip(conv.weight, dims = [-2,-1])
-    weight = torch.permute(weight, (1,0,2,3))#*np.prod(im_shape) #torch.conv2d performs a cross-correlation, i.e., convolution with flipped weight
+    weight = torch.permute(weight, (1,0,2,3)) #torch.conv2d performs a cross-correlation, i.e., convolution with flipped weight
+    if norm == 'forward':
+        weight*=np.prod(im_shape)
+    elif norm == 'ortho':
+        weight*= np.sqrt(np.prod(im_shape))
+    
     if parametrization=='spectral':
         weight = spatial_to_spectral(weight, im_shape, norm=norm, conv_like_cnn=conv_like_cnn)
 
     odd = ((im_shape[-1]%2) == 1)
     
     return SpectralConv2d(
-            conv.in_channels, conv.out_channels,\
-            parametrization=parametrization,\
-            weight=weight, stride = conv.stride, odd = odd,\
-            in_shape = in_shape, out_shape = out_shape,\
+            conv.in_channels, conv.out_channels,
+            parametrization=parametrization,
+            weight=weight, stride = conv.stride, odd = odd,
+            in_shape = in_shape, out_shape = out_shape,
             conv_like_cnn = conv_like_cnn,
             norm=norm
             )

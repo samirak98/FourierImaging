@@ -12,7 +12,7 @@ sys.path.append(os.path.abspath('../../'))
 import fourierimaging as fi
 
 from fourierimaging.utils.helpers import load_model, init_opt, fix_seed
-from fourierimaging.modules import TrigonometricResize_2d, SpectralCNN
+from fourierimaging.modules import TrigonometricResize_2d, SpectralCNN, SpectralResNet
 from fourierimaging.utils import datasets as data
 import fourierimaging.train as train
 
