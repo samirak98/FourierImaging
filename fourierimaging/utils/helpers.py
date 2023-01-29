@@ -64,7 +64,7 @@ def load_model(conf):
             if model_conf.pretrained:
                 model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
             else:
-                model = resnet18(padding_mode=model_conf.padding_mode)
+                model = resnet18(padding_mode=model_conf.padding_mode, num_classes=conf.dataset.num_classes)
         else:
             model = spectralresnet18()
 

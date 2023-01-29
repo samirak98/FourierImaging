@@ -73,6 +73,7 @@ class trainer:
         val_acc = 0.0
         val_loss = 0.0
         tot_steps = 0
+        epoch_ctr = 0
         
         # loop over all batches
         if self.valid_loader is None:
@@ -91,11 +92,13 @@ class trainer:
                 val_acc += (logits.max(1)[1] == y).sum().item()
                 val_loss += loss.item()
                 tot_steps += y.shape[0]
+                epoch_ctr += 1
                 
             # print accuracy
             if self.verbosity > 0: 
                 print(50*"-")
                 print('Validation Accuracy: ' + str(100 * val_acc/tot_steps)+'[%]')
+                print('Validation loss:', val_loss/epoch_ctr)
             return {'val_loss':val_loss, 'val_acc':val_acc/tot_steps}
 
 class Tester:
@@ -110,6 +113,7 @@ class Tester:
         test_acc = 0.0
         test_loss = 0.0
         tot_steps = 0
+        epoch_ctr = 0
         # loop over all batches
         for batch_idx, (x, y) in enumerate(self.test_loader):
             # get batch data
@@ -124,9 +128,10 @@ class Tester:
             test_acc += (logits.max(1)[1] == y).sum().item()
             test_loss += loss.item()
             tot_steps += y.shape[0]
+            epoch_ctr += 1
             
         # print accuracy
         if self.verbosity > 0: 
             print(50*"-")
             print('Test Accuracy: ' + str(100*test_acc/tot_steps) + '[%]')
-        return {'test_loss':test_loss, 'test_acc':test_acc/tot_steps}
+        return {'test_loss':test_loss/epoch_ctr, 'test_acc':test_acc/tot_steps}
