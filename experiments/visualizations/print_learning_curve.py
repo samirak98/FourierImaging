@@ -28,19 +28,7 @@ import fourierimaging.train as train
 def main():
     accs = []
     paths = [
-             '../saved_models/cnns/cnn-3-3',
-             '../saved_models/cnns/cnn-5-5',
-             '../saved_models/cnns/cnn-15-15',
-             '../saved_models/cnns/cnn-20-20',
-             '../saved_models/cnns/cnn-25-25',
-             '../saved_models/cnns/cnn-28-28',
              '../saved_models/cnns/spectral-cnn-spectral-3-3',
-             '../saved_models/cnns/spectral-cnn-spectral-5-5',
-             '../saved_models/cnns/spectral-cnn-spectral-10-10',
-             '../saved_models/cnns/spectral-cnn-spectral-15-15',
-             '../saved_models/cnns/spectral-cnn-spectral-20-20',
-             '../saved_models/cnns/spectral-cnn-spectral-25-25',
-             '../saved_models/cnns/spectral-cnn-spectral-28-28'
             ]
 
     conf = torch.load(paths[0], map_location=torch.device('cpu'))['conf']
@@ -57,19 +45,7 @@ def main():
             conf.train.device ='cpu'
         history = torch.load(path, map_location=torch.device('cpu'))['history']
     
-        tester = train.Tester(test_loader, conf.train)
-        
-        model = load_model(conf).to('cpu')
-        model.load_state_dict(torch.load(path, map_location='cpu')['model_state_dict'])
-    
-        acc = tester(model)['test_acc']
-        accs.append([path, acc])
-       
-    fname = 'spectral-cnn-perf.csv'
-    with open(fname, 'w') as f:
-        writer = csv.writer(f, lineterminator = '\n')
-        for i in range(len(accs)):
-            writer.writerow(accs[i])
+        plt.plot(history['val_acc'])
 
     
         #%% define the model
