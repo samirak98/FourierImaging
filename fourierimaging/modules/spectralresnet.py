@@ -164,6 +164,31 @@ class SpectralResNet(nn.Module):
                 elif isinstance(m, BasicBlock) and m.bn2.weight is not None:
                     nn.init.constant_(m.bn2.weight, 0)  # type: ignore[arg-type]
 
+    @classmethod
+    def from_resnet(cls, im_shape, **kwargs):
+        model = cls(**kwargs)
+
+        self.conv1 = conv_to_spectral(
+                            model.conv1, im_shape,\
+                            in_shape=model.select_shape(im_shape, fix_in),\
+                            out_shape=model.select_shape(im_shape, fix_out),\
+                            parametrization=model.parametrization,
+                            norm=model.norm,
+                            conv_like_cnn = model.conv_like_cnn
+                        )
+        self.layer1 = model._convert_layer(model.layer1, [im_shape[0]//2, im_shape[1]//2])
+        self.layer2 = model._convert_layer(model.layer2, [im_shape[0]//4, im_shape[1]//4])
+        self.layer3 = model._convert_layer(model.layer1, [im_shape[0]//8, im_shape[1]//8])
+        self.layer4 = model._convert_layer(model.layer1, [im_shape[0]//16, im_shape[1]//16])
+
+    def _convert_layer(self, layer, im_shape):
+        for m in layers:
+            l =[]
+            if isinstance(m, nn.Conv2d):
+                print(m)
+            else:
+                l.append(m)
+
     def _make_layer(
         self,
         planes: int,

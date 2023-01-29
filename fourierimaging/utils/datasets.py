@@ -82,20 +82,33 @@ def load(conf):
         transform = transforms.Compose([
                             #transforms.Resize(tuple(im_shape[-2:])),
                             transforms.ToTensor(),
+                            transforms.RandomHorizontalFlip(p=0.5),
                             transforms.Resize(tuple(im_shape[-2:])),
                             #TrigonometricResize_2d(im_shape[-2:]),
                             ])
 
         transform_test = transforms.Compose([
                             transforms.ToTensor(),
+                            transforms.Resize(tuple(im_shape[-2:])),
                             ])
         path = conf.path+'/CUB200'
         train = ImageFolder(path+'/train', transform=transform)
-        test = ImageFolder(path+'/test', transform=transform)
-        valid = ImageFolder(path+'/valid', transform=transform)
-
         with open_dict(conf):
             conf.num_classes = len(train.classes)
+            conf.train_split=0.9
+        #test = ImageFolder(path+'/test', transform=transform)
+        #valid = ImageFolder(path+'/valid', transform=transform)
+
+        total_count = len(train)
+        train_count = int(0.9*total_count)
+        test_count = total_count - train_count
+        train, test = torch.utils.data.random_split(
+                        train,
+                        [train_count, test_count],
+                        generator=torch.Generator().manual_seed(42)
+                    )
+
+
     else:
         raise ValueError("Unknown dataset: " + conf.name)
    

@@ -59,6 +59,7 @@ def main(conf: DictConfig) -> None:
     for i in range(conf['train']['epochs']):
         print(50*".")
         print('Startig epoch: ' + str(i))
+        print('Learning rate: ' + str(opt.param_groups[0]['lr']))
         print(50*"=")
         
         # train_step
