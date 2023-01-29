@@ -20,7 +20,7 @@ rc('axes', prop_cycle=default_cycler)
 
 fig,ax = plt.subplots(1,4,figsize=(8.27,11.69/5), sharey=True)
 accs = []
-with open('results/CUB200.csv', 'r') as f:
+with open('results/CUB200-normal.csv', 'r') as f:
     reader = csv.reader(f, lineterminator = '\n')
     old_data = None
     ax_idx=-1
