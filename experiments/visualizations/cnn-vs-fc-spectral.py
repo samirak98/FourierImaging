@@ -6,7 +6,7 @@ import numpy as np
 import csv
 import matplotlib.pyplot as plt
 import matplotlib as mpl 
-mpl.use('webagg')
+#mpl.use('webagg')
 from omegaconf import DictConfig, OmegaConf, open_dict
 
 # custom imports
@@ -24,18 +24,19 @@ from fourierimaging.utils import datasets as data
 import fourierimaging.train as train
 
 #%%
-paths = ['../saved_models/cnns/cnn-3-3-20230126-180030',
-         '../saved_models/cnns/cnn-5-5-20230126-180703',
+paths = ['../saved_models/cnns/cnn-3-3',
+         '../saved_models/cnns/cnn-5-5',
          #'../saved_models/cnns/spectral-cnn-spatial-3-3-20230126-173803',
          #'../saved_models/cnns/spectral-cnn-spatial-5-5-20230126-175357'
-         '../saved_models/cnns/spectral-cnn-spatial-3-3-20230127-172734',
-         '../saved_models/cnns/spectral-cnn-spatial-5-5-20230127-174322'
+         '../saved_models/cnns/spectral-cnn-spatial-3-3',
+         '../saved_models/cnns/spectral-cnn-spatial-5-5'
         ]
 
 fig, ax = plt.subplots()
 for path in paths:
-    conf = torch.load(path)['conf']
-    history = torch.load(path)['history']
+    conf = torch.load(path, map_location=torch.device('cpu'))['conf']
+    history = torch.load(path, map_location=torch.device('cpu'))['history']
+
 
     #model.load_state_dict(torch.load(path, map_location=device)['model_state_dict'])
 
