@@ -90,10 +90,9 @@ class SpectralCNN(nn.Module):
     def from_CNN(
                 cls, CNN, fix_in = False, fix_out = False,
                 parametrization='spectral', norm='forward',
-                conv_like_cnn = False):
+                conv_like_cnn = False,
+                im_shape = [28,28]):
 
-        self.ksize1 = ksize1
-        self.ksize2 = ksize2
         model = cls(mean=CNN.mean, std = CNN.std,\
                     act_fun = CNN.act_fun,\
                     fix_in = fix_in, fix_out = fix_out,
@@ -109,14 +108,16 @@ class SpectralCNN(nn.Module):
                             out_shape=model.select_shape([28, 28], fix_out),\
                             parametrization=parametrization,
                             norm=norm,
-                            conv_like_cnn = conv_like_cnn
+                            conv_like_cnn = True
                         )
+
+        second_imshape = [im_shape[0]//CNN.stride, im_shape[1]//CNN.stride]
         model.layers2 = SpectralBlock.from_conv(
-                            CNN.layers2.conv, [14,14],\
+                            CNN.layers2.conv, second_imshape,\
                             in_shape=model.select_shape([14, 14], fix_in),\
                             parametrization=parametrization,
                             norm=norm,
-                            conv_like_cnn = conv_like_cnn
+                            conv_like_cnn = True
                         )
         model.avgpool = CNN.avgpool
         model.fc = CNN.fc

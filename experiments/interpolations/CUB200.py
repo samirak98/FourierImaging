@@ -22,7 +22,7 @@ from select_sizing import sizing
 
 path = '../saved_models/resnet-20230129-153250'
 conf = torch.load(path)['conf']
-spectral = False
+spectral = True
 
 with open_dict(conf):
     conf['dataset']['path'] = '../../../datasets'
@@ -37,7 +37,7 @@ model = load_model(conf).to(device)
 model.load_state_dict(torch.load(path)['model_state_dict'])
 
 if spectral:
-    model = SpectralResNet.from_resnet(model, [112, 112]).to(device)
+    model = SpectralResNet.from_resnet(model, [112, 112], fix_out=False, norm='backward').to(device)
 
 #%% eval
 data_sizing = ['TRIGO', 'BILINEAR']
@@ -49,7 +49,7 @@ combinations = [(d,m) for d in data_sizing for m in model_sizing]
 
 fname = 'results/CUB200'
 if spectral:
-    fname+='-spectral.csv'
+    fname+='-spectral-2.csv'
 else:
     fname+='-circular.csv'
 

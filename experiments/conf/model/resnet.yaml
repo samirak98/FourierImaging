@@ -2,5 +2,6 @@ type: resnet
 size: 18
 pretrained: False
 padding_mode: 'circular'
+stride_trigo: False
 spectral:
   use: False

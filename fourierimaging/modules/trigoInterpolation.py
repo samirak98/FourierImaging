@@ -101,7 +101,8 @@ class SpectralConv2d(nn.Module):
                  ksize1 = 1, ksize2 = 1,\
                  stride = (1,1), norm = 'forward',\
                  odd = True, 
-                 conv_like_cnn = False
+                 conv_like_cnn = False,
+                 stride_trigo = False
                 ):
         super(SpectralConv2d, self).__init__()
 
@@ -118,6 +119,7 @@ class SpectralConv2d(nn.Module):
         self.norm = norm
         self.odd = odd
         self.conv_like_cnn = conv_like_cnn
+        self.stride_trigo = stride_trigo
         im_factor = 1
         
     
@@ -179,7 +181,7 @@ class SpectralConv2d(nn.Module):
 
         if self.parametrization=='spectral':
             kernel_shape = np.array([self.ksize1, self.ksize2])
-            multiplier_padded = symmetric_padding(self.weight, kernel_shape, im_shape_new + (1-im_shape_new%2)) 
+            multiplier_padded = symmetric_padding(self.weight, kernel_shape, im_shape_new + (1-im_shape_new%2))
         elif self.parametrization=='spatial':
             multiplier = spatial_to_spectral(self.weight, im_shape_old, norm=self.norm, conv_like_cnn=self.conv_like_cnn)
             # spatial zero-padding to match image shape, then ifftshift to align center, then rfft2 and rfftshift to get multiplier, maybe this can be optimized by using the 's' parameter for rfft2
@@ -202,12 +204,16 @@ class SpectralConv2d(nn.Module):
                             self.compl_mul2d(x_ft_padded, multiplier_padded),\
                             im_shape_new + (1-im_shape_new%2), im_shape_new
                         )
-                    ), 
+                    ),
                     norm = self.norm,\
                     s=tuple(im_shape_new)
                 )
         if sum(self.stride) > 1:
-            output = output[...,0::self.stride[0], 0::self.stride[1]]
+            if self.stride_trigo:
+                stride_size = [int(np.ceil(im_shape_new[0]/self.stride[0])), int(np.ceil(im_shape_new[1]/self.stride[1]))] 
+                output = TrigonometricResize_2d([stride_size[0], stride_size[1]])(output)
+            else:
+                output = output[...,0::self.stride[0], 0::self.stride[1]]
         return output
 
 

@@ -20,9 +20,10 @@ class BasicBlock(nn.Module):
 
 
 class CNN(nn.Module):
-    def __init__(self, mean = 0.0, std = 1.0, act_fun=nn.ReLU(),\
-                 mid_channels=32, out_channels=64,\
-                 ksize1 = 5, ksize2 = 5):
+    def __init__(self, mean = 0.0, std = 1.0, act_fun=nn.ReLU(),
+                 mid_channels=32, out_channels=64,
+                 ksize1 = 5, ksize2 = 5,
+                 stride = 2):
         super(CNN, self).__init__()
         #
         self.mean = mean
@@ -30,11 +31,12 @@ class CNN(nn.Module):
         self.act_fun = act_fun
         self.ksize1 = ksize1
         self.ksize2 = ksize2
+        self.stride = stride
 
-        self.layers1 = BasicBlock(1,  mid_channels, kernel=(ksize1,ksize2), stride=2, padding=ksize1//2, padding_mode='circular')
+        self.layers1 = BasicBlock(1,  mid_channels, kernel=(ksize1,ksize2), stride=self.stride, padding=ksize1//2, padding_mode='circular')
         sksize1 = min(ksize1, 14)
         sksize2 = min(ksize2, 14)
-        self.layers2 = BasicBlock(mid_channels, out_channels, kernel=(sksize1,sksize2), stride=2, padding=sksize1//2, padding_mode='circular')
+        self.layers2 = BasicBlock(mid_channels, out_channels, kernel=(sksize1,sksize2), stride=self.stride, padding=sksize1//2, padding_mode='circular')
 
         self.avgpool = nn.AdaptiveAvgPool2d((4,4))
 

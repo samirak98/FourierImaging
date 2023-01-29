@@ -5,26 +5,91 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
+import numpy as np
+
 from torchvision.models._api import Weights, WeightsEnum
+from .trigoInterpolation import TrigonometricResize_2d
 
-def conv3x3(in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1, padding_mode='zeros') -> nn.Conv2d:
+
+class conv_trigo_stride(nn.Module):
+    def __init__(self,
+                in_planes: int, 
+                out_planes: int, 
+                stride: int = 1, 
+                kernel_size: int = 1,
+                groups: int = 1, 
+                dilation: int = 1,
+                padding:int = 0,
+                bias:bool = False,
+                padding_mode='zeros'):
+
+        super().__init__()
+        self.stride = stride
+        self.conv = nn.Conv2d(
+                        in_planes,
+                        out_planes,
+                        kernel_size=kernel_size,
+                        stride=1,
+                        padding=padding,
+                        groups=groups,
+                        bias=bias,
+                        dilation=dilation,
+                        padding_mode=padding_mode,
+                    )
+        self.resize = TrigonometricResize_2d
+    
+    def forward(self, x):
+        x = self.conv(x)
+        stride_size = [int(np.ceil(x.shape[-2]/self.stride)), int(np.ceil(x.shape[-1]/self.stride))] 
+        x = self.resize([stride_size[0], stride_size[1]])(x)
+        return x
+
+def conv3x3(in_planes: int, out_planes: int, stride: int = 1, groups: int = 1, dilation: int = 1, padding_mode='zeros',
+            stride_trigo: bool = False) -> nn.Conv2d:
     """3x3 convolution with padding"""
-    return nn.Conv2d(
-        in_planes,
-        out_planes,
-        kernel_size=3,
-        stride=stride,
-        padding=dilation,
-        groups=groups,
-        bias=False,
-        dilation=dilation,
-        padding_mode=padding_mode,
-    )
+
+    if not stride_trigo:
+        return nn.Conv2d(
+            in_planes,
+            out_planes,
+            kernel_size=3,
+            stride=stride,
+            padding=dilation,
+            groups=groups,
+            bias=False,
+            dilation=dilation,
+            padding_mode=padding_mode,
+        )
+    else:
+        return conv_trigo_stride(
+            in_planes,
+            out_planes,
+            kernel_size=3,
+            stride=stride,
+            padding=dilation,
+            groups=groups,
+            bias=False,
+            dilation=dilation,
+            padding_mode=padding_mode,
+        )
 
 
-def conv1x1(in_planes: int, out_planes: int, stride: int = 1, padding_mode='zeros') -> nn.Conv2d:
+def conv1x1(in_planes: int, out_planes: int, stride: int = 1, padding_mode='zeros',
+            stride_trigo: bool = False) -> nn.Conv2d:
     """1x1 convolution"""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False, padding_mode=padding_mode)
+    if not stride_trigo:
+        return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False, padding_mode=padding_mode)
+    else:
+        return conv_trigo_stride(
+            in_planes,
+            out_planes,
+            kernel_size=1,
+            stride=stride,
+            padding=0,
+            bias=False,
+            padding_mode=padding_mode,
+        )
+
 
 
 class BasicBlock(nn.Module):
@@ -41,6 +106,7 @@ class BasicBlock(nn.Module):
         dilation: int = 1,
         norm_layer: Optional[Callable[..., nn.Module]] = None,
         padding_mode='zeros',
+        stride_trigo: bool = False
     ) -> None:
         super().__init__()
         if norm_layer is None:
@@ -50,10 +116,10 @@ class BasicBlock(nn.Module):
         if dilation > 1:
             raise NotImplementedError("Dilation > 1 not supported in BasicBlock")
         # Both self.conv1 and self.downsample layers downsample the input when stride != 1
-        self.conv1 = conv3x3(inplanes, planes, stride, padding_mode=padding_mode)
+        self.conv1 = conv3x3(inplanes, planes, stride, padding_mode=padding_mode, stride_trigo=stride_trigo)
         self.bn1 = norm_layer(planes)
         self.relu = nn.ReLU(inplace=True)
-        self.conv2 = conv3x3(planes, planes, padding_mode=padding_mode)
+        self.conv2 = conv3x3(planes, planes, padding_mode=padding_mode, stride_trigo=stride_trigo)
         self.bn2 = norm_layer(planes)
         self.downsample = downsample
         self.stride = stride
@@ -147,7 +213,8 @@ class ResNet(nn.Module):
         width_per_group: int = 64,
         replace_stride_with_dilation: Optional[List[bool]] = None,
         norm_layer: Optional[Callable[..., nn.Module]] = None,
-        padding_mode = 'zeros'
+        padding_mode = 'zeros',
+        stride_trigo: bool = False
     ) -> None:
         super().__init__()
         if norm_layer is None:
@@ -157,6 +224,7 @@ class ResNet(nn.Module):
         self.padding_mode = padding_mode
         self.inplanes = 64
         self.dilation = 1
+        self.stride_trigo = stride_trigo
         if replace_stride_with_dilation is None:
             # each element in the tuple indicates if we should replace
             # the 2x2 stride with a dilated convolution instead
@@ -168,7 +236,19 @@ class ResNet(nn.Module):
             )
         self.groups = groups
         self.base_width = width_per_group
-        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False, padding_mode=padding_mode)
+
+        if not stride_trigo:
+            self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False, padding_mode=padding_mode)
+        else:
+            self.conv1 = conv_trigo_stride(
+                            3,
+                            self.inplanes,
+                            kernel_size=7,
+                            stride=2,
+                            padding=3,
+                            bias=False,
+                            padding_mode=padding_mode,
+                        )
         self.bn1 = norm_layer(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -212,14 +292,16 @@ class ResNet(nn.Module):
             stride = 1
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
-                conv1x1(self.inplanes, planes * block.expansion, stride, padding_mode=self.padding_mode),
+                conv1x1(self.inplanes, planes * block.expansion, stride, padding_mode=self.padding_mode, stride_trigo=self.stride_trigo),
                 norm_layer(planes * block.expansion),
             )
 
         layers = []
         layers.append(
             block(
-                self.inplanes, planes, stride, downsample, self.groups, self.base_width, previous_dilation, norm_layer, padding_mode=self.padding_mode
+                self.inplanes, planes, stride, downsample, self.groups, self.base_width, 
+                previous_dilation, norm_layer, padding_mode=self.padding_mode,
+                stride_trigo=self.stride_trigo
             )
         )
         self.inplanes = planes * block.expansion
@@ -228,11 +310,12 @@ class ResNet(nn.Module):
                 block(
                     self.inplanes,
                     planes,
-                    groups=self.groups,
-                    base_width=self.base_width,
-                    dilation=self.dilation,
-                    norm_layer=norm_layer,
-                    padding_mode=self.padding_mode,
+                    groups = self.groups,
+                    base_width = self.base_width,
+                    dilation = self.dilation,
+                    norm_layer = norm_layer,
+                    padding_mode = self.padding_mode,
+                    stride_trigo = self.stride_trigo
                 )
             )
 

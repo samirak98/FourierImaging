@@ -182,7 +182,7 @@ class SpectralResNet(nn.Module):
         self.layer4 = self._make_layer(512, layers[3], stride=2)
 
         #self.resize = lambda x: nn.functional.interpolate(x, size=[4,4], mode='bicubic', align_corners=False, antialias=True)
-        #self.resize = TrigonometricResize_2d([4,4])
+        self.resize = TrigonometricResize_2d([4,4])
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(512, num_classes)
 
@@ -206,7 +206,8 @@ class SpectralResNet(nn.Module):
     @classmethod
     def from_resnet(cls, resnet, im_shape,\
                     fix_in = False,
-                    fix_out= False
+                    fix_out= False,
+                    norm='forward'
                     ):
         layers = [
                 len(resnet.layer1), 
@@ -217,7 +218,8 @@ class SpectralResNet(nn.Module):
 
         model = cls(layers,
                     fix_in = False,
-                    fix_out= False
+                    fix_out= False,
+                    norm=norm
                     )
 
         model.conv1 = conv_to_spectral(
@@ -225,7 +227,7 @@ class SpectralResNet(nn.Module):
                             in_shape=model.select_shape(im_shape, fix_in),\
                             out_shape=model.select_shape(im_shape, fix_out),\
                             parametrization=model.parametrization,
-                            norm=model.norm,
+                            norm=norm,
                             conv_like_cnn = True
                         )
         model.bn1 = resnet.bn1
@@ -242,7 +244,8 @@ class SpectralResNet(nn.Module):
                     l_name, 
                     model._convert_layer(
                         reslayer,
-                        current_shape
+                        current_shape,
+                        norm=norm
                         )
                     )
 
@@ -257,12 +260,12 @@ class SpectralResNet(nn.Module):
         model.fc = resnet.fc
         return model
 
-    def _convert_layer(self, layer, im_shape):
+    def _convert_layer(self, layer, im_shape, norm='forward'):
         l = []
         current_shape = im_shape
         for m in layer:           
             if isinstance(m, BasicBlock):
-                mm = SpectralBlock.from_resblock(m, current_shape)
+                mm = SpectralBlock.from_resblock(m, current_shape, norm=norm)
                 current_shape = [int(np.ceil(current_shape[0]/m.stride)),  int(np.ceil(current_shape[1]/m.stride))]
                 
                 l.append(mm)

@@ -37,7 +37,8 @@ def load_model(conf):
         model = CNN(mean=conf.dataset.mean, std=conf.dataset.std,\
                     ksize1=model_conf.ksize[0], ksize2 = model_conf.ksize[1],\
                     mid_channels=model_conf.mid_channels,\
-                    out_channels=model_conf.out_channels)
+                    out_channels=model_conf.out_channels,
+                    stride = model_conf.stride)
         if model_conf.spectral.use:
             if model_conf.spectral.cnninit:
                 model = SpectralCNN.from_CNN(
@@ -64,7 +65,9 @@ def load_model(conf):
             if model_conf.pretrained:
                 model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
             else:
-                model = resnet18(padding_mode=model_conf.padding_mode, num_classes=conf.dataset.num_classes)
+                model = resnet18(padding_mode=model_conf.padding_mode, 
+                                 num_classes=conf.dataset.num_classes,
+                                 stride_trigo = model_conf.stride_trigo)
         else:
             model = spectralresnet18()
 
