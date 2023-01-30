@@ -21,7 +21,7 @@ from omegaconf import DictConfig, OmegaConf, open_dict
 from select_sizing import sizing
 
 path = '../saved_models/cnns/cnn-5-5'
-path = '../saved_models/cnn-5-5-20230129-223101'
+#path = '../saved_models/cnn-5-5-20230129-223101'
 conf = torch.load(path)['conf']
 spectral = True
 
@@ -47,9 +47,10 @@ data_sizing = ['TRIGO', 'BILINEAR']
 model_sizing = ['NONE', 'TRIGO', 'BILINEAR']
 combinations = [(d,m) for d in data_sizing for m in model_sizing]        
         
-fname = 'results/FMNIST' + str(spectral * '-spectral') + '-2.csv'
+fname = 'results/FMNIST' + str(spectral * '-spectral') + '-3.csv'
 size_step = 2
 sizes = np.arange(3,60,size_step)
+sizes = np.append(sizes, [28])
 orig_size = [28,28]
 
 
