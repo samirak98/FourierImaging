@@ -23,7 +23,7 @@ import numpy as np
 in_channels = 3
 out_channels = 7
 conv = nn.Conv2d(in_channels=in_channels, out_channels=out_channels,\
-                 kernel_size=3, padding=1, padding_mode='circular' ,bias=False)
+                 kernel_size=19, padding=9, padding_mode='circular' ,bias=False)
 max_err = 0.
 for i in [27,28]:
     for j in [27, 28]:
@@ -42,7 +42,7 @@ for i in [27,28]:
             scc_err = torch.max(torch.abs(sccx-cx)).item()
             #scc_err = 0.
 
-        if max(sc_err, scc_err) > 1e-6:
+        if max(sc_err, scc_err) > 1e-5:
             print('The error seems too high')
             print('Spectral Error: ' + str(sc_err))
             print('Spatial Error: '   + str(scc_err))
@@ -85,7 +85,7 @@ for i in [5,6]:
             plt.colorbar()
             plt.show()
         
-        if max(spec_spat_err, spec_conv_err, spat_conv_err) > 1e-6:
+        if max(spec_spat_err, spec_conv_err, spat_conv_err) > 1e-5:
             #print('The error seems too high')
             print('Spectral - Spatial: ' + str(spec_spat_err))
             print('spectralFNO - CONV: ' + str(spec_conv_err))

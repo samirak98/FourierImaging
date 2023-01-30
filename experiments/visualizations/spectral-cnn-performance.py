@@ -25,56 +25,71 @@ import fourierimaging.train as train
 
 #%%
 
-def main():
-    accs = []
-    paths = [
-             '../saved_models/cnns/cnn-3-3',
-             '../saved_models/cnns/cnn-5-5',
-             '../saved_models/cnns/cnn-15-15',
-             '../saved_models/cnns/cnn-20-20',
-             '../saved_models/cnns/cnn-25-25',
-             '../saved_models/cnns/cnn-28-28',
-             '../saved_models/cnns/spectral-cnn-spectral-3-3',
-             '../saved_models/cnns/spectral-cnn-spectral-5-5',
-             '../saved_models/cnns/spectral-cnn-spectral-10-10',
-             '../saved_models/cnns/spectral-cnn-spectral-15-15',
-             '../saved_models/cnns/spectral-cnn-spectral-20-20',
-             '../saved_models/cnns/spectral-cnn-spectral-25-25',
-             '../saved_models/cnns/spectral-cnn-spectral-28-28'
-            ]
+accs = []
+paths = [
+            '../saved_models/cnns/cnn-3-3',
+            '../saved_models/cnns/cnn-5-5',
+            '../saved_models/cnns/cnn-15-15',
+            '../saved_models/cnns/cnn-20-20',
+            '../saved_models/cnns/cnn-25-25',
+            '../saved_models/cnns/cnn-28-28',
+            '../saved_models/cnns/spectral-cnn-spectral-3-3',
+            '../saved_models/cnns/spectral-cnn-spectral-5-5',
+            '../saved_models/cnns/spectral-cnn-spectral-10-10',
+            '../saved_models/cnns/spectral-cnn-spectral-15-15',
+            '../saved_models/cnns/spectral-cnn-spectral-20-20',
+            '../saved_models/cnns/spectral-cnn-spectral-25-25',
+            '../saved_models/cnns/spectral-cnn-spectral-28-28'
+        ]
 
-    conf = torch.load(paths[0], map_location=torch.device('cpu'))['conf']
+conf = torch.load(paths[0])['conf']
+with open_dict(conf):
+    conf['dataset']['path'] = '../../../datasets'
+    #conf.train.device ='cpu'
+
+device = conf.train.device
+train_loader, valid_loader, test_loader = data.load(conf.dataset)
+
+path = '../saved_models/cnns/cnn-5-5'
+conf = torch.load(path, map_location=torch.device(device))['conf']
+history = torch.load(path, map_location=torch.device(device))['history']
+tester = train.Tester(test_loader, conf.train)
+
+model = load_model(conf).to(device)
+model.load_state_dict(torch.load(path, map_location=device)['model_state_dict'])
+for s in [3,5,10,15,20,25,28]:
+    spectral_model = SpectralCNN.from_CNN(model, im_shape=[28,28], ksize=[s,s])
+    #print(spectral_model)
+    acc = tester(spectral_model)['test_acc']
+    accs.append(['spatial-to-spectral-' + str(s) + '-' + str(s), acc])
+
+for path in paths:
+    print(50*':')
+    print(path)
+    conf = torch.load(path, map_location=torch.device(device))['conf']
     with open_dict(conf):
-        conf['dataset']['path'] = '../../../datasets'
-        conf.train.device ='cpu'
-    train_loader, valid_loader, test_loader = data.load(conf.dataset)
+        conf.train.device =device
+    history = torch.load(path, map_location=torch.device(device))['history']
 
-    for path in paths:
-        print(50*':')
-        print(path)
-        conf = torch.load(path, map_location=torch.device('cpu'))['conf']
-        with open_dict(conf):
-            conf.train.device ='cpu'
-        history = torch.load(path, map_location=torch.device('cpu'))['history']
+    tester = train.Tester(test_loader, conf.train)
     
-        tester = train.Tester(test_loader, conf.train)
-        
-        model = load_model(conf).to('cpu')
-        model.load_state_dict(torch.load(path, map_location='cpu')['model_state_dict'])
+    model = load_model(conf).to(device)
+    model.load_state_dict(torch.load(path, map_location=device)['model_state_dict'])
+    #print(model)
     
-        acc = tester(model)['test_acc']
-        accs.append([path, acc])
-       
-    fname = 'spectral-cnn-perf.csv'
-    with open(fname, 'w') as f:
-        writer = csv.writer(f, lineterminator = '\n')
-        for i in range(len(accs)):
-            writer.writerow(accs[i])
+    acc = tester(model)['test_acc']
+    accs.append([path, acc])
+    
 
-    
-        #%% define the model
-    
-        #model = load_model(conf).to(device)
 
-if __name__ == '__main__':
-    main()
+
+fname = 'spectral-cnn-perf'
+with open(fname, 'w') as f:
+    writer = csv.writer(f, lineterminator = '\n')
+    for i in range(len(accs)):
+        writer.writerow(accs[i])
+
+
+    #%% define the model
+
+    #model = load_model(conf).to(device)

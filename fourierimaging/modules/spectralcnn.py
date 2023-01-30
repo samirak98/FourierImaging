@@ -28,13 +28,15 @@ class SpectralBlock(nn.Module):
                   in_shape=None, out_shape=None,
                   parametrization='spectral',
                   norm='forward',
-                  conv_like_cnn = False):
+                  conv_like_cnn = False,
+                  ksize=None):
         block = cls()
         block.conv = conv_to_spectral(
                         conv, im_shape,
                         parametrization=parametrization, norm=norm,\
                         in_shape=in_shape, out_shape=out_shape,
-                        conv_like_cnn = conv_like_cnn
+                        conv_like_cnn = conv_like_cnn,
+                        ksize=ksize
                     )
         return block
 
@@ -91,7 +93,8 @@ class SpectralCNN(nn.Module):
                 cls, CNN, fix_in = False, fix_out = False,
                 parametrization='spectral', norm='forward',
                 conv_like_cnn = False,
-                im_shape = [28,28]):
+                im_shape = [28,28],
+                ksize=None):
 
         model = cls(mean=CNN.mean, std = CNN.std,\
                     act_fun = CNN.act_fun,\
@@ -103,21 +106,23 @@ class SpectralCNN(nn.Module):
                     parametrization=parametrization
                     )
         model.layers1 = SpectralBlock.from_conv(
-                            CNN.layers1.conv, [28,28],\
+                            CNN.layers1.conv, im_shape,\
                             in_shape=model.select_shape([28, 28], fix_in),\
                             out_shape=model.select_shape([28, 28], fix_out),\
                             parametrization=parametrization,
                             norm=norm,
-                            conv_like_cnn = True
+                            conv_like_cnn = True,
+                            ksize=ksize
                         )
 
         second_imshape = [im_shape[0]//CNN.stride, im_shape[1]//CNN.stride]
         model.layers2 = SpectralBlock.from_conv(
-                            CNN.layers2.conv, second_imshape,\
-                            in_shape=model.select_shape([14, 14], fix_in),\
+                            CNN.layers2.conv, second_imshape,
+                            in_shape=model.select_shape([14, 14], fix_in),
                             parametrization=parametrization,
                             norm=norm,
-                            conv_like_cnn = True
+                            conv_like_cnn = True,
+                            ksize=ksize
                         )
         model.avgpool = CNN.avgpool
         model.fc = CNN.fc
