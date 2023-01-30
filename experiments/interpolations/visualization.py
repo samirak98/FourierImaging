@@ -22,7 +22,7 @@ rc('axes', prop_cycle=default_cycler)
 fig,ax = plt.subplots(1,2,figsize=(8.27/1.5,11.69/4), sharey=True)
 accs = []
 
-fnames = ['results/CUB200circular.csv', 'results/CUB200spectral.csv']
+fnames = ['results/CUB200-spectral-2.csv', 'results/CUB200-circular.csv']
 #fnames = ['results/FMNIST-spectral-2.csv', 'results/FMNIST-2.csv']
 for j,fname in enumerate(fnames):
     with open(fname, 'r') as f:
@@ -64,7 +64,7 @@ for j,fname in enumerate(fnames):
                     #ax[ax_idx].legend(loc='lower right')
  
 #%%
-save = False
+save = True
 if save:
     plt.tight_layout(pad=0.1)
     plt.savefig('CUB200-Interpolation.pdf')

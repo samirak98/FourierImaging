@@ -1,14 +1,16 @@
 import csv
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib import rc
+from cycler import cycler
 
 fname = 'spectral-cnn-perf.csv'
 accs = {}
 
 default_cycler = (cycler(color=['xkcd:sky', 
-                                'xkcd:apple','olive','xkcd:grapefruit',\
-                                'xkcd:muted blue','peru','tab:pink',\
-                                'deeppink', 'steelblue', 'tan', 'sienna',\
+                                'xkcd:apple','olive','xkcd:grapefruit',
+                                'xkcd:muted blue','peru','tab:pink',
+                                'deeppink', 'steelblue', 'tan', 'sienna',
                                 'olive', 'coral']))
 
 with open(fname, 'r') as f:
