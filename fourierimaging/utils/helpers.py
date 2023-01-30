@@ -34,11 +34,16 @@ def load_model(conf):
         model = perceptron(model_conf.sizes, act_fun = act_fun,\
                            mean=conf.dataset.mean, std=conf.dataset.std)
     elif model_conf.type == 'simple_cnn':
+        if 'stride' in model_conf.keys():
+            stride = model_conf.stride
+        else:
+            stride = 2
+
         model = CNN(mean=conf.dataset.mean, std=conf.dataset.std,\
                     ksize1=model_conf.ksize[0], ksize2 = model_conf.ksize[1],\
                     mid_channels=model_conf.mid_channels,\
                     out_channels=model_conf.out_channels,
-                    stride = model_conf.stride)
+                    stride = stride)
         if model_conf.spectral.use:
             if model_conf.spectral.cnninit:
                 model = SpectralCNN.from_CNN(
