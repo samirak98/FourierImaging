@@ -4,7 +4,7 @@ import torch
 from .trigoInterpolation import SpectralConv2d, conv_to_spectral
 
 class BasicBlock(nn.Module):
-    def __init__(self, in_planes, out_planes, kernel=1, stride=1, padding=0, padding_mode='zeros'):
+    def __init__(self, in_planes, out_planes, kernel=1, stride=1, padding='same', padding_mode='zeros'):
         super(BasicBlock, self).__init__()
         self.kernel = kernel
         self.in_planes = in_planes
@@ -32,11 +32,10 @@ class CNN(nn.Module):
         self.ksize1 = ksize1
         self.ksize2 = ksize2
         self.stride = stride
-
-        self.layers1 = BasicBlock(1,  mid_channels, kernel=(ksize1,ksize2), stride=self.stride, padding=ksize1//2, padding_mode='circular')
+        self.layers1 = BasicBlock(1,  mid_channels, kernel=(ksize1,ksize2), stride=self.stride, padding='same', padding_mode='circular')
         sksize1 = min(ksize1, 14)
         sksize2 = min(ksize2, 14)
-        self.layers2 = BasicBlock(mid_channels, out_channels, kernel=(sksize1,sksize2), stride=self.stride, padding=sksize1//2, padding_mode='circular')
+        self.layers2 = BasicBlock(mid_channels, out_channels, kernel=(sksize1,sksize2), stride=self.stride, padding='same', padding_mode='circular')
 
         self.avgpool = nn.AdaptiveAvgPool2d((4,4))
 

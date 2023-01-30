@@ -25,7 +25,8 @@ import fourierimaging.train as train
 
 #%%
 device = 'cuda:1'
-path = '../saved_models/resnet-20230129-153250'
+#path = '../saved_models/resnet-20230129-153250'
+path = '../saved_models/resnet-20230130-061405'
 
 conf = torch.load(path, map_location=torch.device(device))['conf']
 with open_dict(conf):
@@ -43,7 +44,7 @@ tester = train.Tester(test_loader, conf.train)
 model = load_model(conf).to(device)
 model.load_state_dict(torch.load(path, map_location=device)['model_state_dict'])
 
-spectral_model = SpectralResNet.from_resnet(model, [112, 112]).to(device)
+spectral_model = SpectralResNet.from_resnet(model, [112, 112], stride_trigo=True).to(device)
 
 #%%
 tester = train.Tester(test_loader, conf.train)

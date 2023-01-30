@@ -283,7 +283,9 @@ def spectral_to_spatial(weight, im_shape, odd = True, norm = 'forward', conv_lik
   
 def conv_to_spectral(conv, im_shape, parametrization='spectral', norm='forward',\
                      in_shape=None, out_shape=None, conv_like_cnn = True,
-                     ksize=None):
+                     ksize=None,
+                     stride_trigo = False,
+                     stride = None):
     im_shape = np.array(im_shape)
     weight = conv.weight
     weight = torch.flip(conv.weight, dims = [-2,-1])
@@ -298,13 +300,17 @@ def conv_to_spectral(conv, im_shape, parametrization='spectral', norm='forward',
 
     odd = ((im_shape[-1]%2) == 1)
     
+    if stride is None:
+        stride = conv.stride
+
     return SpectralConv2d(
             conv.in_channels, conv.out_channels,
             parametrization=parametrization,
-            weight=weight, stride = conv.stride, odd = odd,
+            weight=weight, stride = stride, odd = odd,
             in_shape = in_shape, out_shape = out_shape,
             conv_like_cnn = conv_like_cnn,
-            norm=norm
+            norm=norm,
+            stride_trigo = stride_trigo
             )
         
     

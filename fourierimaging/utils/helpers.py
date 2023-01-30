@@ -62,7 +62,8 @@ def load_model(conf):
                             fix_out = True, 
                             parametrization=model_conf.spectral.parametrization,
                             norm=model_conf.spectral.norm,
-                            conv_like_cnn = model_conf.spectral.conv_like_cnn
+                            conv_like_cnn = model_conf.spectral.conv_like_cnn,
+                            stride = stride
                         )
 
     elif model_conf.type == 'resnet':
