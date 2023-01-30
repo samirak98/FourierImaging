@@ -53,7 +53,9 @@ class SpectralCNN(nn.Module):
                  ksize1 = 5, ksize2 = 5,\
                  parametrization='spectral',
                  norm='forward',
-                 conv_like_cnn = False):
+                 conv_like_cnn = False,
+                 im_shape = [28,28],
+                 stride = 2):
         super(SpectralCNN, self).__init__()
         self.mean = mean
         self.std = std
@@ -62,26 +64,28 @@ class SpectralCNN(nn.Module):
         self.ksize2 = ksize2
         self.parametrization = parametrization
         self.norm = norm
+        self.stride = stride
 
         self.layers1 = SpectralBlock(
                             in_channels=1, out_channels=mid_channels,\
                             ksize1 = ksize1, ksize2 = ksize2,\
-                            stride = (2,2),\
+                            stride = (stride, stride),\
                             in_shape = self.select_shape([28, 28], fix_in),\
                             out_shape = self.select_shape([28, 28], fix_out),\
                             parametrization = parametrization,
                             norm = norm,
-                            conv_like_cnn = conv_like_cnn
+                            conv_like_cnn = conv_like_cnn,
                         )
 
+        second_imshape = [im_shape[0]//stride, im_shape[1]//stride]
         self.layers2 = SpectralBlock(
                             in_channels=mid_channels, out_channels=out_channels,
-                            ksize1 = min(ksize1, 14), ksize2 = min(ksize2, 14),
-                            stride=(2,2),
+                            ksize1 = min(ksize1, second_imshape[0]), ksize2 = min(ksize2, second_imshape[1]),
+                            stride=(stride, stride),
                             in_shape=self.select_shape([14, 14], fix_in),
                             parametrization=parametrization,
                             norm = norm,
-                            conv_like_cnn = conv_like_cnn
+                            conv_like_cnn = conv_like_cnn,
                         )
         self.avgpool = nn.AdaptiveAvgPool2d((4,4))
 

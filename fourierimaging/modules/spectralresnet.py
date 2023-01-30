@@ -11,9 +11,55 @@ from torchvision.models._api import Weights, WeightsEnum
 from .trigoInterpolation import SpectralConv2d, conv_to_spectral, TrigonometricResize_2d
 from .resnet import BasicBlock
 
-def conv1x1(in_planes: int, out_planes: int, stride: int = 1, padding_mode='zeros') -> nn.Conv2d:
+class conv_trigo_stride(nn.Module):
+    def __init__(self,
+                in_planes: int, 
+                out_planes: int, 
+                stride: int = 1, 
+                kernel_size: int = 1,
+                groups: int = 1, 
+                dilation: int = 1,
+                padding:int = 0,
+                bias:bool = False,
+                padding_mode='zeros'):
+
+        super().__init__()
+        self.stride = stride
+        self.conv = nn.Conv2d(
+                        in_planes,
+                        out_planes,
+                        kernel_size=kernel_size,
+                        stride=1,
+                        padding=padding,
+                        groups=groups,
+                        bias=bias,
+                        dilation=dilation,
+                        padding_mode=padding_mode,
+                    )
+        self.resize = TrigonometricResize_2d
+
+    def forward(self, x):
+        x = self.conv(x)
+        stride_size = [int(np.ceil(x.shape[-2]/self.stride)), int(np.ceil(x.shape[-1]/self.stride))] 
+        x = self.resize([stride_size[0], stride_size[1]])(x)
+        return x
+
+
+def conv1x1(in_planes: int, out_planes: int, stride: int = 1, padding_mode='zeros',
+            stride_trigo: bool = False) -> nn.Conv2d:
     """1x1 convolution"""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False, padding_mode=padding_mode)
+    if not stride_trigo:
+        return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False, padding_mode=padding_mode)
+    else:
+        return conv_trigo_stride(
+            in_planes,
+            out_planes,
+            kernel_size=1,
+            stride=stride,
+            padding=0,
+            bias=False,
+            padding_mode=padding_mode,
+        )
 
 class SpectralBlock(nn.Module):
     expansion: int = 1
@@ -33,7 +79,8 @@ class SpectralBlock(nn.Module):
         ksize1 = 1, ksize2 = 1,
         norm = 'forward',\
         conv_like_cnn: bool = False,
-        odd = True
+        odd = True,
+        stride_trigo = False
     ) -> None:
         super().__init__()
         if norm_layer is None:
@@ -51,7 +98,8 @@ class SpectralBlock(nn.Module):
                         ksize1 = ksize1, ksize2 = ksize2,
                         stride = (stride,stride), norm = norm,
                         odd = odd,
-                        conv_like_cnn = conv_like_cnn
+                        conv_like_cnn = conv_like_cnn,
+                        stride_trigo = stride_trigo
                     )
 
         self.bn1 = norm_layer(planes)
@@ -63,7 +111,8 @@ class SpectralBlock(nn.Module):
                         ksize1 = ksize1, ksize2 = ksize2,
                         stride = (1,1), norm = norm,
                         odd = odd,
-                        conv_like_cnn = conv_like_cnn
+                        conv_like_cnn = conv_like_cnn,
+                        stride_trigo = stride_trigo
                     )
         self.bn2 = norm_layer(planes)
         self.downsample = downsample
@@ -75,25 +124,39 @@ class SpectralBlock(nn.Module):
                     in_shape=None, out_shape=None,
                     parametrization='spectral',
                     norm='forward',
-                    conv_like_cnn = False
+                    conv_like_cnn = False,
+                    stride_trigo = False
                     ):
         block = cls()
         block.stride = resblock.stride
         block.bn1 = resblock.bn1
         block.relu = resblock.relu 
+
+        if stride_trigo:
+            resconv1 = resblock.conv1.conv
+            resconv2 = resblock.conv2.conv
+            stride   = resblock.stride
+        else:
+            stride = None
+            resconv1 = resblock.conv1
+            resconv2 = resblock.conv2
+
         block.conv1 = conv_to_spectral(
-                        resblock.conv1, im_shape,
+                        resconv1, im_shape,
                         parametrization=parametrization, norm=norm,\
                         in_shape=in_shape, out_shape=out_shape,
-                        conv_like_cnn = True
+                        conv_like_cnn = True,
+                        stride_trigo = stride_trigo,
+                        stride = (stride, stride)
                     )
         
         s_shape = [np.ceil(im_shape[0]/block.stride), np.ceil(im_shape[1]/block.stride)]
         block.conv2 = conv_to_spectral(
-                        resblock.conv2, np.array(s_shape, dtype=int),
+                        resconv2, np.array(s_shape, dtype=int),
                         parametrization=parametrization, norm=norm,\
                         in_shape=in_shape, out_shape=out_shape,
-                        conv_like_cnn = True
+                        conv_like_cnn = True,
+                        stride_trigo = stride_trigo
                     )
 
         block.bn2 = resblock.bn2
@@ -137,6 +200,7 @@ class SpectralResNet(nn.Module):
         width_per_group: int = 64,
         replace_stride_with_dilation: Optional[List[bool]] = None,
         norm_layer: Optional[Callable[..., nn.Module]] = None,
+        stride_trigo: bool = False
     ) -> None:
         super().__init__()
         if norm_layer is None:
@@ -151,6 +215,7 @@ class SpectralResNet(nn.Module):
         self.fix_in = fix_in
         self.fix_out = fix_out
         self.conv_like_cnn = conv_like_cnn
+        self.stride_trigo = stride_trigo
 
         if replace_stride_with_dilation is None:
             # each element in the tuple indicates if we should replace
@@ -171,7 +236,8 @@ class SpectralResNet(nn.Module):
                         ksize1 = 7, ksize2 = 7,
                         stride = (2,2), 
                         norm = self.norm,
-                        conv_like_cnn = conv_like_cnn
+                        conv_like_cnn = conv_like_cnn,
+                        stride_trigo = stride_trigo
                     )
         self.bn1 = norm_layer(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
@@ -207,7 +273,8 @@ class SpectralResNet(nn.Module):
     def from_resnet(cls, resnet, im_shape,\
                     fix_in = False,
                     fix_out= False,
-                    norm='forward'
+                    norm='forward',
+                    stride_trigo = False,
                     ):
         layers = [
                 len(resnet.layer1), 
@@ -219,16 +286,23 @@ class SpectralResNet(nn.Module):
         model = cls(layers,
                     fix_in = False,
                     fix_out= False,
-                    norm=norm
+                    norm=norm,
+                    stride_trigo = stride_trigo
                     )
 
+        if stride_trigo:
+            resconv = resnet.conv1.conv
+        else:
+            resconv = resnset.conv1
         model.conv1 = conv_to_spectral(
-                            resnet.conv1, im_shape,\
+                            resconv, im_shape,\
                             in_shape=model.select_shape(im_shape, fix_in),\
                             out_shape=model.select_shape(im_shape, fix_out),\
                             parametrization=model.parametrization,
                             norm=norm,
-                            conv_like_cnn = True
+                            conv_like_cnn = True,
+                            stride_trigo = stride_trigo,
+                            stride = (2,2)
                         )
         model.bn1 = resnet.bn1
         model.maxpool = resnet.maxpool
@@ -265,7 +339,7 @@ class SpectralResNet(nn.Module):
         current_shape = im_shape
         for m in layer:           
             if isinstance(m, BasicBlock):
-                mm = SpectralBlock.from_resblock(m, current_shape, norm=norm)
+                mm = SpectralBlock.from_resblock(m, current_shape, norm=norm, stride_trigo=self.stride_trigo)
                 current_shape = [int(np.ceil(current_shape[0]/m.stride)),  int(np.ceil(current_shape[1]/m.stride))]
                 
                 l.append(mm)
@@ -289,7 +363,7 @@ class SpectralResNet(nn.Module):
             stride = 1
         if stride != 1 or self.inplanes != planes:
             downsample = nn.Sequential(
-                conv1x1(self.inplanes, planes, stride),
+                conv1x1(self.inplanes, planes, stride, stride_trigo=self.stride_trigo),
                 norm_layer(planes),
             )
 

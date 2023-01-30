@@ -50,13 +50,14 @@ with open_dict(conf):
 device = conf.train.device
 train_loader, valid_loader, test_loader = data.load(conf.dataset)
 
-path = '../saved_models/cnns/cnn-5-5'
+path = '../saved_models/cnns/cnn-28-28'
 conf = torch.load(path, map_location=torch.device(device))['conf']
 history = torch.load(path, map_location=torch.device(device))['history']
 tester = train.Tester(test_loader, conf.train)
 
 model = load_model(conf).to(device)
 model.load_state_dict(torch.load(path, map_location=device)['model_state_dict'])
+
 for s in [3,5,10,15,20,25,28]:
     spectral_model = SpectralCNN.from_CNN(model, im_shape=[28,28], ksize=[s,s])
     #print(spectral_model)

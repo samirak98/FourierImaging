@@ -20,9 +20,10 @@ import fourierimaging.train as train
 from omegaconf import DictConfig, OmegaConf, open_dict
 from select_sizing import sizing
 
-path = '../saved_models/resnet-20230129-153250'
+#path = '../saved_models/resnet-20230129-153250'
+path = '../saved_models/resnet-20230130-061405'
 conf = torch.load(path)['conf']
-spectral = True
+spectral = False
 
 with open_dict(conf):
     conf['dataset']['path'] = '../../../datasets'
@@ -37,7 +38,7 @@ model = load_model(conf).to(device)
 model.load_state_dict(torch.load(path)['model_state_dict'])
 
 if spectral:
-    model = SpectralResNet.from_resnet(model, [112, 112], fix_out=False, norm='backward').to(device)
+    model = SpectralResNet.from_resnet(model, [112, 112], fix_out=False, norm='backward', stride_trigo = True).to(device)
 
 #%% eval
 data_sizing = ['TRIGO', 'BILINEAR']
