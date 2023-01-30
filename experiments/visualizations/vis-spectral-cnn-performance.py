@@ -5,6 +5,12 @@ import numpy as np
 fname = 'spectral-cnn-perf.csv'
 accs = {}
 
+default_cycler = (cycler(color=['xkcd:sky', 
+                                'xkcd:apple','olive','xkcd:grapefruit',\
+                                'xkcd:muted blue','peru','tab:pink',\
+                                'deeppink', 'steelblue', 'tan', 'sienna',\
+                                'olive', 'coral']))
+
 with open(fname, 'r') as f:
     reader = csv.reader(f, lineterminator = '\n')
     for i,row in enumerate(reader):
@@ -37,6 +43,6 @@ for param in accs.keys():
     a = np.array(accs[param])
     plt.plot(a[:,0], a[:,1], label=param)
     
-ax.set_ylim([0.7,.9])
+#ax.set_ylim([0.7,.9])
     
 plt.legend()
