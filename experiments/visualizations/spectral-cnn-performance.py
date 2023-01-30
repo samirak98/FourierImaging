@@ -81,7 +81,6 @@ for path in paths:
     model.load_state_dict(torch.load(path, map_location=device)['model_state_dict'])
     #print(model)
     
-
     acc = tester(model)['test_acc']
     accs.append([path, acc])
     
