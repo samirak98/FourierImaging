@@ -38,7 +38,7 @@ model = load_model(conf).to(device)
 model.load_state_dict(torch.load(path)['model_state_dict'])
 
 #%%
-spectral=True
+spectral=False
 if spectral:
     model = SpectralCNN.from_CNN(model, fix_out = False).to(device)
 
