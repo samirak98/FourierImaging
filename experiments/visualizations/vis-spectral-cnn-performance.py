@@ -14,7 +14,7 @@ default_cycler = (cycler(color=['olive','xkcd:apple',
                                 'olive', 'coral']))
 
 plt.style.use(['seaborn-whitegrid'])
-rc('font',**{'family':'lmodern','serif':['Times'],'size':10})
+rc('font',**{'family':'lmodern','serif':['Times'],'size':14})
 rc('text', usetex=True)
 rc('lines', linewidth=2, linestyle='-')
 rc('axes', prop_cycle=default_cycler)
@@ -46,7 +46,7 @@ with open(fname, 'r') as f:
         
 #%%
 plt.close('all')
-fig, ax = plt.subplots(figsize=(8.27/1.5,11.69/4))
+fig, ax = plt.subplots(figsize=(8.27/1.5,11.69/5))
 
 for param in accs.keys():
     a = np.array(accs[param])

@@ -41,7 +41,7 @@ rc('axes', prop_cycle=default_cycler)
 
 def main():
     plt.close('all')
-    fig, ax = plt.subplots(1,2, sharey=True, figsize=(8.27/1.5,11.69/4))
+    fig, ax = plt.subplots(1,2, sharey=True, figsize=(8.27/1.5,11.69/5))
     
     accs = []
     paths = {

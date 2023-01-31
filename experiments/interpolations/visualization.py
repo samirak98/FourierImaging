@@ -12,7 +12,7 @@ default_cycler = (cycler(color=['xkcd:sky',
                                 'xkcd:muted blue','peru','tab:pink',\
                                 'deeppink', 'steelblue', 'tan', 'sienna',\
                                 'olive', 'coral']))
-rc('font',**{'family':'lmodern','serif':['Times'],'size':10})
+rc('font',**{'family':'lmodern','serif':['Times'],'size':14})
 rc('text', usetex=True)
 rc('lines', linewidth=2, linestyle='-')
 rc('axes', prop_cycle=default_cycler)
@@ -22,8 +22,8 @@ rc('axes', prop_cycle=default_cycler)
 fig,ax = plt.subplots(1,2,figsize=(8.27/1.5,11.69/4), sharey=True)
 accs = []
 
-fnames = ['results/CUB200-spectral-2.csv', 'results/CUB200-circular.csv']
-#fnames = ['results/FMNIST-spectral-2.csv', 'results/FMNIST-2.csv']
+#fnames = ['results/CUB200-spectral-2.csv', 'results/CUB200-circular.csv']
+fnames = ['results/FMNIST-spectral-3.csv', 'results/FMNIST-3.csv']
 for j,fname in enumerate(fnames):
     with open(fname, 'r') as f:
         reader = csv.reader(f, lineterminator = '\n')
@@ -41,17 +41,21 @@ for j,fname in enumerate(fnames):
                     ax[ax_idx].set_title('Data sizing: ' + row[0])
                 
                 if j == 0:
-                    zorder = 0
+                    zorder = 5
                     if row[1] == 'NONE':
                         name = 'FNO'
                         zorder = 10
                     elif row[1] == 'TRIGO':
-                        name = 'Trigonometric Interpolation'
+                        name = 'Trigonometric\n Interpolation'
                     elif row[1] == 'BILINEAR':
-                        name = 'Bilinear Interpolation'
+                        name = 'Bilinear\n Interpolation'
                         
                     vals = np.array(row[2:], dtype=np.float64)
                     ax[ax_idx].plot(sizes[idx], vals[idx], label = name, zorder = zorder)
+                    ax[ax_idx].set_xlabel('Input Image Size')
+                    
+                    if ax_idx==0:
+                        ax[ax_idx].set_ylabel('Test Accuracy')
                 else:
                     if row[1] == 'NONE':
                         name = 'CNN'
@@ -61,10 +65,12 @@ for j,fname in enumerate(fnames):
                 #ax[ax_idx].xaxis.set_ticks(np.arange(3,214,50))
                 if ax_idx==0:
                     pass
-                    #ax[ax_idx].legend(loc='lower right')
- 
+                    ax[ax_idx].legend(#loc='lower right',
+                                      fontsize=14)
+            
 #%%
 save = True
 if save:
     plt.tight_layout(pad=0.1)
-    plt.savefig('CUB200-Interpolation.pdf')
+    #plt.savefig('CUB200-Interpolation.pdf')
+    plt.savefig('FMNIST-Interpolation.pdf')
