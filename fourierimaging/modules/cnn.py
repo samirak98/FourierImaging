@@ -33,8 +33,8 @@ class CNN(nn.Module):
         self.ksize2 = ksize2
         self.stride = stride
         self.layers1 = BasicBlock(1,  mid_channels, kernel=(ksize1,ksize2), stride=self.stride, padding='same', padding_mode='circular')
-        sksize1 = min(ksize1, 14)
-        sksize2 = min(ksize2, 14)
+        sksize1 = min(ksize1, 28//self.stride)
+        sksize2 = min(ksize2, 28//self.stride)
         self.layers2 = BasicBlock(mid_channels, out_channels, kernel=(sksize1,sksize2), stride=self.stride, padding='same', padding_mode='circular')
 
         self.avgpool = nn.AdaptiveAvgPool2d((4,4))
