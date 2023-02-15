@@ -52,7 +52,7 @@ ainterinter = torch.fft.irfft2(arft, s=(7,6))
 print(ainterrft.shape)
 print(torch.norm(arft - ainterrft))
 
-# %%
+# %% define img
 img = torch.rand(1,1,8,8)
 resize = torch.nn.functional.interpolate
 inter_img = resize(img, (4,4), mode='bilinear', align_corners=False)
