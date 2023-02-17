@@ -6,18 +6,19 @@ import torch.nn.functional as tf
 import torch.nn as nn
 
 def rfftshift(x):
-    ##Returns a shifted version of a matrix obtained by torch.fft.rfft2(x), i.e. the left half of torch.fft.fftshift(torch.fft.fft2(x))
+    """Returns a shifted version of a matrix obtained by torch.fft.rfft2(x), i.e. the left half of torch.fft.fftshift(torch.fft.fft2(x))"""
     # Real FT shifting thus consists of two steps: 1d-Shifting the last dimension and flipping in second to last dimension and taking the complex conjugate,
     # to get the frequency order [-N,...,-1,0]
     return torch.conj(torch.flip(fft.fftshift(x, dim=-2), dims=[-1]))
 
 def irfftshift(x):
-    ##Inverts rfftshift: Returns a non-shifted version of the left half of torch.fft.fftshift(torch.fft.fft2(x)), i.e. torch.fft.rfft2(x)
+    """Inverts rfftshift: Returns a non-shifted version of the left half of torch.fft.fftshift(torch.fft.fft2(x)), i.e. torch.fft.rfft2(x)"""
     return torch.conj(torch.flip(fft.ifftshift(x, dim=-2), dims=[-1]))
 
 def symmetric_padding(xf_old, im_shape_old, im_shape_new):
+    """Returns the rfft2 of the real trigonometric interpolation of an image x of shape 'im_shape_old' and shifted real Fourier transform 'xf_old' to shape 'im_shape_new'"""
     #xf_old has to be a shifted rfft2 matrix
-    add_shape = np.array(xf_old.shape[:-2])
+    add_shape = np.array(xf_old.shape[:-2]) #[batchsize, channels]
 
     ft_height_old = im_shape_old[-2] + (1 - im_shape_old[-2]%2) #always odd
     ft_width_old = im_shape_old[-1]//2 + 1 #always odd
@@ -95,6 +96,7 @@ class TrigonometricResize_2d:
 # - additional parameter 'parameterization' = {'spectral', 'spatial'}: determines wether the optimization is done in spectral (original) or spatial (addition) domain
 # - additional parameters 'ksize1' and 'ksize2': determines kernel height and width if parametrization=='spatial'
 # - additional parameter 'out_shape' = [int, int]: determines height and width of output. If not chosen, output shape will be the same as input shape
+# - additional parameter 'conv_like_cnn': TODO
 class SpectralConv2d(nn.Module):
     def __init__(self, in_channels, out_channels, weight=None,\
                  out_shape=None, in_shape=None, parametrization = 'spectral',\
@@ -118,7 +120,7 @@ class SpectralConv2d(nn.Module):
         self.stride = stride
         self.norm = norm
         self.odd = odd
-        self.conv_like_cnn = conv_like_cnn
+        self.conv_like_cnn = conv_like_cnn 
         self.stride_trigo = stride_trigo
         im_factor = 1
         
@@ -172,7 +174,7 @@ class SpectralConv2d(nn.Module):
         if self.in_shape == None:
             im_shape_old = x_shape # variable spatial support of kernel in case of spatial parametrization
         else:
-            im_shape_old = np.array(self.in_shape) # close to fixed spatial support in case of spatial and spectral parametrization
+            im_shape_old = np.array(self.in_shape) # 'fixed' spatial support in case of spatial and spectral parametrization
 
         if self.out_shape == None:
             im_shape_new = x_shape
