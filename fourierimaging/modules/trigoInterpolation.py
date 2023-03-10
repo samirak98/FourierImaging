@@ -93,18 +93,23 @@ class TrigonometricResize_2d:
 
 # This is a modified version of https://github.com/zongyi-li/fourier_neural_operator/blob/master/fourier_2d.py
 # Modifications and additions are as follows:
+# - additional parameter 'weight' = None or tensor of in_channels x out_channels x ksize1 x ksize2: if not None, the spectral weights are set according to the passed argument
+# - additional parameter 'out_shape' = [int, int]: determines height and width of output. If not chosen, output shape will be the same as input shape. If fixed and norm = 'forward', FNO-behavior is equivalent to CNN-behavior for trigonometrically interpolated inputs.
+# - additional parameter 'in_shape' = [int, int]: determines the image dimension that corresponds to the parameters.
 # - additional parameter 'parameterization' = {'spectral', 'spatial'}: determines wether the optimization is done in spectral (original) or spatial (addition) domain
-# - additional parameters 'ksize1' and 'ksize2': determines kernel height and width if parametrization=='spatial'
-# - additional parameter 'out_shape' = [int, int]: determines height and width of output. If not chosen, output shape will be the same as input shape
-# - additional parameter 'conv_like_cnn': TODO
+# - additional parameters 'ksize1' and 'ksize2': determines kernel height and width and substitutes 'modes1' and 'modes2'. This makes it possible to use even-dimensional parameters. Only necessary if 'weight' is None.
+# - additional parameters 'stride' = [int,int], 'strided_trigo' = {True, False}: determines size of stride and if the dimensionality reduction is done by conventional striding (strided_trigo = False) or downsizing with trigonometric interpolation (strided_trigo = True)
+# - additional parameter 'norm' = {'forward', 'backward', 'ortho'}: Normalization factor used for fft-functions. If out_shape is fixed, it is recommended to use 'forward' to be interpolation-equivariant w.r.t. trigonometric interpolation
+# - additional parameter 'odd' = {True, False}: Specifies the oddity of the width of the spectral kernel, since this is not clear from the rfft-representation.
+# - additional parameter 'conv_like_cnn': Should be True if parameters are taken from a standard CNN-layer with even-dimensional kernel or even-dimensional (training) inputs to resemble CNN-behavior
+# - changes in parametrization: spectral parameters are now stored in one tensor (corresponds to a shifted version of the split parametrization in original code)
+# - functional changes: behavior for even dimensions is now in accordance to trigonometric interpolation of real-valued functions
 class SpectralConv2d(nn.Module):
     def __init__(self, in_channels, out_channels, weight=None,\
                  out_shape=None, in_shape=None, parametrization = 'spectral',\
                  ksize1 = 1, ksize2 = 1,\
-                 stride = (1,1), norm = 'forward',\
-                 odd = True, 
-                 conv_like_cnn = False,
-                 stride_trigo = False
+                 stride = (1,1), stride_trigo = False,\
+                  norm = 'forward', odd = True, conv_like_cnn = False
                 ):
         super(SpectralConv2d, self).__init__()
 
@@ -181,6 +186,7 @@ class SpectralConv2d(nn.Module):
         else:
             im_shape_new = np.array(self.out_shape)
 
+        # adapt the weight parameters to input dimension by trigonometric interpolation (to odd dimension)
         if self.parametrization=='spectral':
             kernel_shape = np.array([self.ksize1, self.ksize2])
             multiplier_padded = symmetric_padding(self.weight, kernel_shape, im_shape_new + (1-im_shape_new%2))
@@ -190,7 +196,9 @@ class SpectralConv2d(nn.Module):
             multiplier_padded = symmetric_padding(multiplier,\
                                                   im_shape_old,\
                                                   im_shape_new + (1-im_shape_new%2))
-        #convolution is implemented by elementwise multiplication of rfft-coefficients (only for odd dimensions, for even dimensions we interpolate to the next higher odd dimension)
+            
+
+        #For even input dimensions we interpolate to the next higher odd dimension
         #this could be optimized by checking dimensions first
         x_ft_padded =   symmetric_padding(
                             rfftshift(
@@ -199,7 +207,7 @@ class SpectralConv2d(nn.Module):
                             x_shape, im_shape_new + (1-im_shape_new%2)
                         )
 
-        # Return to physical space after correcting dimension if desired dimension is even
+        # Elementwise multiplication of rfft-coefficients and return to physical space after correcting dimension with symmetric padding if desired dimension is even
         output = fft.irfft2(
                     irfftshift(
                         symmetric_padding(
@@ -210,12 +218,14 @@ class SpectralConv2d(nn.Module):
                     norm = self.norm,\
                     s=tuple(im_shape_new)
                 )
+        # dimension reduction by trigonometric interpolation or conventional striding (not resolution invariant)
         if sum(self.stride) > 1:
             if self.stride_trigo:
                 stride_size = [int(np.ceil(im_shape_new[0]/self.stride[0])), int(np.ceil(im_shape_new[1]/self.stride[1]))] 
                 output = TrigonometricResize_2d([stride_size[0], stride_size[1]])(output)
             else:
                 output = output[...,0::self.stride[0], 0::self.stride[1]]
+
         return output
 
 
