@@ -108,7 +108,7 @@ class Tester:
         self.device = conf['device']
         self.verbosity = conf['verbosity']
 
-    def __call__(self, model):
+    def __call__(self, model, attack = None):
         model.eval()
         test_acc = 0.0
         test_loss = 0.0
@@ -118,6 +118,10 @@ class Tester:
         for batch_idx, (x, y) in enumerate(self.test_loader):
             # get batch data
             x, y = x.to(self.device), y.to(self.device)
+
+            # update x to an adversarial example (optional)
+            if attack is not None:
+                x = attack(model, x, y)
             
             # evaluate model on batch
             logits = model(x)
