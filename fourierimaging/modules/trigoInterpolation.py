@@ -105,17 +105,30 @@ class TrigonometricResize_2d:
 # - changes in parametrization: spectral parameters are now stored in one tensor (corresponds to a shifted version of the split parametrization in original code)
 # - functional changes: behavior for even dimensions is now in accordance to trigonometric interpolation of real-valued functions
 class SpectralConv2d(nn.Module):
-    def __init__(self, in_channels, out_channels, weight=None,\
-                 out_shape=None, in_shape=None, parametrization = 'spectral',\
-                 ksize1 = 1, ksize2 = 1,\
-                 stride = (1,1), stride_trigo = False,\
-                  norm = 'forward', odd = True, conv_like_cnn = False
+    """2D spectral convolution layer
+    
+    Args:
+        in_channels (int): number of input channels
+        out_channels (int): number of output channels
+        weight (tensor): spectral weights of shape (in_channels, out_channels, ksize1, ksize2)
+        out_shape (list): determines height and width of output. If not chosen, output shape will be the same as input shape
+        in_shape (list): determines the image dimension that corresponds to the parameters
+        parametrization (str): determines wether the optimization is done in spectral or spatial domain
+        ksize1 (int): determines kernel height
+        ksize2 (int): determines kernel width
+        stride (list): determines size of stride
+        strided_trigo (bool): determines if the dimensionality reduction is done by conventional striding or downsizing with trigonometric interpolation
+        norm (str): Normalization factor used for fft-functions
+        odd (bool): Specifies the oddity of the width of the spectral kernel, since this is not clear from the rfft-representation"""
+
+    def __init__(self, in_channels, out_channels, weight=None,
+                 out_shape=None, in_shape=None, parametrization = 'spectral',
+                 ksize1 = 1, ksize2 = 1,
+                 stride = (1,1), stride_trigo = False,
+                 norm = 'forward', odd = True, conv_like_cnn = False
                 ):
         super(SpectralConv2d, self).__init__()
 
-        """
-        2D Fourier layer. It does FFT, linear transform, and Inverse FFT.    
-        """
 
         self.in_channels = in_channels
         self.out_channels = out_channels

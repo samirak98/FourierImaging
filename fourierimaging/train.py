@@ -15,6 +15,7 @@ def select_loss(name):
         raise ValueError('Unknown loss function: ' + name)
         
     return loss_fct
+    
 #%% the trainer class
 class trainer:
     def __init__(self, model, opt, lr_scheduler, train_loader, valid_loader, conf):
@@ -102,26 +103,27 @@ class trainer:
             return {'val_loss':val_loss, 'val_acc':val_acc/tot_steps}
 
 class Tester:
-    def __init__(self, test_loader, conf):
+    def __init__(self, test_loader, conf, attack = None):
         self.test_loader = test_loader
         self.loss = select_loss(conf['loss'])
         self.device = conf['device']
         self.verbosity = conf['verbosity']
+        self.attack = attack
 
-    def __call__(self, model, attack = None):
+    def __call__(self, model):
         model.eval()
         test_acc = 0.0
         test_loss = 0.0
         tot_steps = 0
         epoch_ctr = 0
         # loop over all batches
-        for batch_idx, (x, y) in enumerate(self.test_loader):
+        for batch_idx, (x, y) in tqdm(enumerate(self.test_loader), total=len(self.test_loader)):
             # get batch data
             x, y = x.to(self.device), y.to(self.device)
 
             # update x to an adversarial example (optional)
-            if attack is not None:
-                x = attack(model, x, y)
+            if self.attack is not None:
+                x = self.attack(model, x, y)
             
             # evaluate model on batch
             logits = model(x)
