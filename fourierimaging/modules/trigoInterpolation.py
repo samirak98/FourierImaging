@@ -119,7 +119,9 @@ class SpectralConv2d(nn.Module):
         stride (list): determines size of stride
         strided_trigo (bool): determines if the dimensionality reduction is done by conventional striding or downsizing with trigonometric interpolation
         norm (str): Normalization factor used for fft-functions
-        odd (bool): Specifies the oddity of the width of the spectral kernel, since this is not clear from the rfft-representation"""
+        odd (bool): Specifies the oddity of the width of the spectral kernel, since this is not clear from the rfft-representation
+        conv_like_cnn (bool): If True resembles CNN-behavior for a certain resolution
+        """
 
     def __init__(self, in_channels, out_channels, weight=None,
                  out_shape=None, in_shape=None, parametrization = 'spectral',
