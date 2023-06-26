@@ -4,6 +4,7 @@ from torchvision.datasets import ImageFolder
 from omegaconf import DictConfig, OmegaConf, open_dict
 from fourierimaging.modules import TrigonometricResize_2d
 import torch
+import fourierimaging.utils.fmnistHelper as fhelp
 #import pandas as pd
 
 import os
@@ -24,10 +25,15 @@ def load(conf):
         train = datasets.MNIST(conf.path, train=True, download=conf.download, transform=transform)
         test = datasets.MNIST(conf.path, train=False, download=conf.download, transform=transform)
     elif conf.name == "FashionMNIST": 
-        # load MNIST
+        # load FashionMNIST
         transform = transforms.Compose([transforms.ToTensor()])
         train = datasets.FashionMNIST(conf.path, train=True, download=conf.download, transform=transform)
         test = datasets.FashionMNIST(conf.path, train=False, download=conf.download, transform=transform)
+    elif conf.name == "convolved_FashionMNIST":
+        transform = transforms.ToTensor()
+        target_transform = fhelp.myTransform(torch.Tensor([[[[0,0],[-1,1]]]]))
+        train = fhelp.CustomImageDataset(transform=transform, target_transform=target_transform)
+        test = fhelp.CustomImageDataset(transform=transform, target_transform=target_transform, train=False)    
     elif conf.name == "CIFAR10":
         conf.im_shape = [3,32,32]
         

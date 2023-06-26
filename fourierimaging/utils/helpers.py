@@ -6,6 +6,7 @@ from ..modules.cnn import CNN
 from ..modules.spectralcnn import SpectralCNN
 from ..modules.resnet import resnet18
 from ..modules.spectralresnet import spectralresnet18
+from ..modules.convolver import Convolver
 import random
 import numpy as np
 #%% set a fixed seed
@@ -81,6 +82,8 @@ def load_model(conf):
     elif model_conf.type == 'efficentnet':
         model = models.efficientnet_b1(pretrained=model_conf.pretrained, weights=models.EfficientNet_B1_Weights.DEFAULT)
         model.classifier[1] = nn.Linear(in_features=1280, out_features=conf.dataset.num_classes)
+    elif model_conf.type == 'convolver':
+        model = Convolver()
     else:
         raise ValueError('Unknown model type: ' + model_conf.type)
     

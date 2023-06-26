@@ -3,6 +3,6 @@ CUDA:
   use_cuda: True
   cuda_device: 0
 defaults:
-  - dataset/FMNIST
+  - dataset/CFMNIST
   - model/spectral
   - train/Adam

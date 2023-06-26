@@ -11,6 +11,8 @@ def select_loss(name):
     elif name == 'crossentropy':
         #loss_fct = F.cross_entropy#
         loss_fct = nn.CrossEntropyLoss()
+    elif name == 'mse':
+        loss_fct = nn.MSELoss()
     else:
         raise ValueError('Unknown loss function: ' + name)
         
