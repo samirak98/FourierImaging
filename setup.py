@@ -4,7 +4,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="polarcbo", 
+    name="fourierimaging", 
     version="0.0.1",
     author="Samira Kabri and Tim Roith",
     author_email="tim.roith@fau.de",
@@ -18,10 +18,12 @@ setuptools.setup(
                 "License :: OSI Approved :: MIT License",
                 "Operating System :: OS Independent"],
     install_requires=[  'numpy', 
-                        'scipy', 
-                        'sklearn', 
+                        'torch', 
+                        'torchvision', 
                         'matplotlib',
-                        'torch',
-                        'torchvision'],
+                        'hydra-core',
+                        'omegaconf',
+                        'tqdm',
+                        'pyyaml'],
     python_requires='>=3.6',
 )
